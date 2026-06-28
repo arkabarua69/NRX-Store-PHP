@@ -1,0 +1,110 @@
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Redirect Trailing Slashes If Not A Folder...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Block direct access to core/ directory
+    RewriteRule ^core/ - [F,L]
+
+    # Block access to sensitive files
+    RewriteRule ^(\.env|composer\.(json|lock)|package\.json|artisan) - [F,L]
+
+    # Send Requests To Front Controller...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# Security Headers
+<IfModule mod_headers.c>
+    # Bypass ngrok browser warning
+    Header set ngrok-skip-browser-warning "true"
+
+    # Prevent clickjacking
+    Header always set X-Frame-Options "SAMEORIGIN"
+
+    # Prevent MIME sniffing
+    Header always set X-Content-Type-Options "nosniff"
+
+    # XSS Protection
+    Header always set X-XSS-Protection "1; mode=block"
+
+    # Referrer Policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Remove server signature
+    Header unset Server
+    Header unset X-Powered-By
+</IfModule>
+
+# Block access to hidden files (.env, .git, etc.)
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Block access to PHP files in uploads directory
+<FilesMatch "\.php$">
+    <If "%{REQUEST_URI} =~ m#^/uploads/#">
+        Order allow,deny
+        Deny from all
+    </If>
+</FilesMatch>
+
+# php -- BEGIN cPanel-generated handler, do not edit
+# This domain inherits the "PHP" package.
+# php -- END cPanel-generated handler, do not edit
+
+# Security Headers
+<IfModule mod_headers.c>
+    # Bypass ngrok browser warning
+    Header set ngrok-skip-browser-warning "true"
+
+    # Fix http:// to https:// in redirect Location headers (for ngrok/proxy)
+    Header always edit Location "^http://" "https://"
+
+    # Prevent clickjacking
+    Header always set X-Frame-Options "SAMEORIGIN"
+
+    # Prevent MIME sniffing
+    Header always set X-Content-Type-Options "nosniff"
+
+    # XSS Protection
+    Header always set X-XSS-Protection "1; mode=block"
+
+    # Referrer Policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Remove server signature
+    Header unset Server
+    Header unset X-Powered-By
+</IfModule>
+
+# Block access to hidden files (.env, .git, etc.)
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Block access to PHP files in uploads directory
+<FilesMatch "\.php$">
+    <If "%{REQUEST_URI} =~ m#^/uploads/#">
+        Order allow,deny
+        Deny from all
+    </If>
+</FilesMatch>
+
+# php -- BEGIN cPanel-generated handler, do not edit
+# This domain inherits the "PHP" package.
+# php -- END cPanel-generated handler, do not edit
