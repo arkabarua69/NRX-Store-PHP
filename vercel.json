@@ -1,0 +1,12 @@
+{
+  "buildCommand": "cd core && composer install --no-dev --optimize-autoloader && npm install && npm run build",
+  "outputDirectory": ".",
+  "installCommand": "cd core && composer install --no-dev --optimize-autoloader",
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/((?!assets/|favicon.ico|robots.txt|images/|icons/|installer/).*)",
+      "destination": "/index.php"
+    }
+  ]
+}

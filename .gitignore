@@ -1,0 +1,53 @@
+# Dependencies
+/core/vendor/
+/core/node_modules/
+
+# Environment files
+/core/.env
+
+# Build output
+/build/
+
+# Storage & cache
+/core/storage/logs/*.log
+/core/storage/framework/cache/*
+/core/storage/framework/sessions/*
+/core/storage/framework/views/*
+/core/storage/debugbar/
+
+# User uploads
+/uploads/
+
+# Database files
+/data/*.db
+
+# IDE files
+/.idea/
+/.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+/core/.phpunit.result.cache
+
+# Vercel
+.vercel/
+
+# Well-known (SSL challenges)
+/.well-known/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Misc
+npm-debug.log
+yarn-error.log
+.env.local
+.env.*.local
