@@ -30,8 +30,8 @@ class Slider extends Model implements HasMedia
 
     public function getImageUrlAttribute(): string
     {
-        return $this->hasMedia()
-            ? $this->getFirstMediaUrl()
+        return $this->hasMedia('image')
+            ? $this->getFirstMediaUrl('image')
             : self::PLACEHOLDER_IMAGE_PATH;
     }
 }

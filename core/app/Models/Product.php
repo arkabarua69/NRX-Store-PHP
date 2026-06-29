@@ -51,8 +51,8 @@ class Product extends Model implements HasMedia
 
     public function getImageUrlAttribute(): string
     {
-        return $this->hasMedia()
-        ? $this->getFirstMediaUrl()
+        return $this->hasMedia('thumbnail')
+        ? $this->getFirstMediaUrl('thumbnail')
         : self::PLACEHOLDER_IMAGE_PATH;
     }
 

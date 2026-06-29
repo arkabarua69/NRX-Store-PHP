@@ -101,6 +101,8 @@ class ProductResource extends Resource
                     ->schema([
                         SpatieMediaLibraryFileUpload::make('thumbnail')
                             ->disk('media')
+                            ->image()
+                            ->maxSize(10240)
                             ->required(),
                         Select::make('type')
                             ->options([

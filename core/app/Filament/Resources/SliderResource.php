@@ -39,6 +39,8 @@ class SliderResource extends Resource
                             ->hintIcon('heroicon-m-question-mark-circle', tooltip: 'Leave it blank if you don\'t need linking.'),
                         SpatieMediaLibraryFileUpload::make('image')
                             ->disk('media')
+                            ->image()
+                            ->maxSize(10240)
                             ->hintIcon('heroicon-m-question-mark-circle', tooltip: 'Resulation must be 1000x2500 pixels'),
                         Toggle::make('status')->required()->default(Status::ACTIVE)
                     ])->columnSpan(2),

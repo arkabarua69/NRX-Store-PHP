@@ -57,46 +57,39 @@ if (!function_exists('get_image')) {
 if (!function_exists('setEnvValue')) {
     function setEnvValue($key, $value)
     {
-        // Get the path to the .env file
         $envFilePath = app()->environmentFilePath();
-
-        // Read the current contents of the .env file
         $contents = File::get($envFilePath);
 
-        // Generate a new value for the key
-        $newValue = is_string($value) ? '"' . $value . '"' : $value;
-
-        // Update the contents with the new key-value pair
+        $newValue = is_string($value) ? '"' . addslashes($value) . '"' : $value;
         $pattern = "/^{$key}=.*/m";
-        $newContents = preg_replace($pattern, "{$key}={$newValue}", $contents);
 
-        // Write the updated contents back to the .env file
-        File::put($envFilePath, $newContents);
+        if (preg_match($pattern, $contents)) {
+            $contents = preg_replace($pattern, "{$key}={$newValue}", $contents);
+        } else {
+            $contents .= "\n{$key}={$newValue}";
+        }
+
+        File::put($envFilePath, $contents);
     }
 }
 
 if (!function_exists('setEnvValues')) {
     function setEnvValues(array $keyValuePairs)
     {
-        // Get the path to the .env file
         $envFilePath = app()->environmentFilePath();
-
-        // Read the current contents of the .env file
         $contents = File::get($envFilePath);
 
-        // Update the contents with the new key-value pairs
         foreach ($keyValuePairs as $key => $value) {
-            // Generate a new value for the key
-            $newValue = is_string($value) ? '"' . $value . '"' : $value;
-
-            // Create a regex pattern for the key
+            $newValue = is_string($value) ? '"' . addslashes($value) . '"' : $value;
             $pattern = "/^{$key}=.*/m";
 
-            // Replace the value in the contents
-            $contents = preg_replace($pattern, "{$key}={$newValue}", $contents);
+            if (preg_match($pattern, $contents)) {
+                $contents = preg_replace($pattern, "{$key}={$newValue}", $contents);
+            } else {
+                $contents .= "\n{$key}={$newValue}";
+            }
         }
 
-        // Write the updated contents back to the .env file
         File::put($envFilePath, $contents);
     }
 }
