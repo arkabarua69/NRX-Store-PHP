@@ -44,8 +44,9 @@ class OrderService
 
     public function getMine(array $queryParams = [], bool $isVoucher = false)
     {
-        $queryBuilder = Order::with(['variation', 'product', 'voucher'])
+        $queryBuilder = Order::with(['variation', 'product', 'voucher', 'transaction'])
             ->where('user_id', user_id())
+            ->whereHas('transaction')
             ->latest();
 
         if ($isVoucher) {
