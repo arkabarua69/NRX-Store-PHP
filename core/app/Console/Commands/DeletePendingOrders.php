@@ -4,37 +4,21 @@ namespace App\Console\Commands;
 
 use App\Constants\Status;
 use App\Models\Order;
-use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Builder;
 
-class DeletePendingOrders extends Command
+class DeletePendingOrders extends DeletePendingRecords
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
     protected $signature = 'orders:delete-pending';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
     protected $description = 'Delete pending orders older than 72 hours';
 
-    /**
-     * Execute the console command.
-     */
-    public function handle()
+    protected function getQuery(): Builder
     {
-        $cutoffTime = now()->subHours(72);
+        return Order::where('status', Status::PENDING);
+    }
 
-        $deletedOrders = Order::where('status', Status::PENDING)
-            ->where('created_at', '<', $cutoffTime)
-            ->delete();
-
-        $this->info("Deleted $deletedOrders pending orders.");
-
-        return 0;
+    protected function getRecordLabel(): string
+    {
+        return 'orders';
     }
 }

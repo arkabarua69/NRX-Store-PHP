@@ -1,88 +1,72 @@
 <?php
 
-use App\Models\Setting;
 use App\Constants\Status;
 use App\Settings\GeneralSettings;
 use Illuminate\Support\Facades\File;
 
-
-if (!function_exists('user_id')) {
+if (! function_exists('user_id')) {
     function user_id()
     {
         return auth()->user()?->id;
     }
 }
 
-if (!function_exists('custom_date')) {
+if (! function_exists('custom_date')) {
     function custom_date($model)
     {
         return date('d-m-Y h:i:s A', strtotime($model->created_at));
     }
 }
 
-if (!function_exists('amount')) {
+if (! function_exists('amount')) {
     function amount($data, $decimals = 0)
     {
-        $replaced_data = str_replace(",", "", $data);
-        return number_format((float) $replaced_data, $decimals, ".", "");
+        $replaced_data = str_replace(',', '', $data);
+
+        return number_format((float) $replaced_data, $decimals, '.', '');
     }
 }
 
-if (!function_exists('price')) {
+if (! function_exists('price')) {
     function price($data, $decimals = 0)
     {
-        $replaced_data = str_replace(",", "", $data);
-        return gs()->currency_symbol . number_format((float) $replaced_data, $decimals, ".", "");
+        $replaced_data = str_replace(',', '', $data);
+
+        return gs()->currency_symbol.number_format((float) $replaced_data, $decimals, '.', '');
     }
 }
 
-if (!function_exists('gs')) {
+if (! function_exists('gs')) {
     function gs()
     {
         static $settings = null;
         if ($settings === null) {
             $settings = new GeneralSettings();
         }
+
         return $settings;
     }
 }
 
-if (!function_exists('get_image')) {
+if (! function_exists('get_image')) {
     function get_image($path)
     {
-        if (empty($path)) return '';
+        if (empty($path)) {
+            return '';
+        }
+
         return route('media.file', ['p' => $path]);
     }
 }
 
-if (!function_exists('setEnvValue')) {
-    function setEnvValue($key, $value)
-    {
-        $envFilePath = app()->environmentFilePath();
-        $contents = File::get($envFilePath);
-
-        $newValue = is_string($value) ? '"' . addslashes($value) . '"' : $value;
-        $quotedKey = preg_quote($key, '/');
-        $pattern = "/^{$quotedKey}=.*/m";
-
-        if (preg_match($pattern, $contents)) {
-            $contents = preg_replace($pattern, "{$key}={$newValue}", $contents);
-        } else {
-            $contents .= "\n{$key}={$newValue}";
-        }
-
-        File::put($envFilePath, $contents);
-    }
-}
-
-if (!function_exists('setEnvValues')) {
+if (! function_exists('setEnvValues')) {
     function setEnvValues(array $keyValuePairs)
     {
         $envFilePath = app()->environmentFilePath();
         $contents = File::get($envFilePath);
 
         foreach ($keyValuePairs as $key => $value) {
-            $newValue = is_string($value) ? '"' . addslashes($value) . '"' : $value;
+            $newValue = is_string($value) ? '"'.addslashes($value).'"' : $value;
             $quotedKey = preg_quote($key, '/');
             $pattern = "/^{$quotedKey}=.*/m";
 
@@ -97,7 +81,14 @@ if (!function_exists('setEnvValues')) {
     }
 }
 
-if (!function_exists('strRandom')) {
+if (! function_exists('setEnvValue')) {
+    function setEnvValue($key, $value)
+    {
+        setEnvValues([$key => $value]);
+    }
+}
+
+if (! function_exists('strRandom')) {
     function strRandom($length = 12)
     {
         $characters = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz123456789';
@@ -106,15 +97,16 @@ if (!function_exists('strRandom')) {
         for ($i = 0; $i < $length; $i++) {
             $randomString .= $characters[random_int(0, $charactersLength - 1)];
         }
+
         return $randomString;
     }
 }
 
-if (!function_exists('putPermanentEnv')) {
+if (! function_exists('putPermanentEnv')) {
     function putPermanentEnv($key, $value)
     {
         $path = app()->environmentFilePath();
-        $escaped = preg_quote('=' . env($key), '/');
+        $escaped = preg_quote('='.env($key), '/');
         file_put_contents($path, preg_replace(
             "/^{$key}{$escaped}/m",
             "{$key}={$value}",
@@ -123,106 +115,104 @@ if (!function_exists('putPermanentEnv')) {
     }
 }
 
-if (!function_exists('slug')) {
+if (! function_exists('slug')) {
     function slug($title)
     {
         return \Illuminate\Support\Str::slug($title);
     }
 }
 
-if (!function_exists('productType')) {
+if (! function_exists('productType')) {
     function productType($type)
     {
         if ($type === Status::TOPUP) {
-            return "Game / Topup";
+            return 'Game / Topup';
         } elseif ($type === Status::INGAME) {
-            return "Game / In Game";
+            return 'Game / In Game';
         } elseif ($type === Status::VOUCHER) {
-            return "Game / Voucher";
+            return 'Game / Voucher';
         } else {
-            return "Digital Product";
+            return 'Digital Product';
         }
     }
 }
 
-if (!function_exists('jsonToPlainText')) {
-    function jsonToPlainText($jsonData)
+if (! function_exists('jsonToFormattedText')) {
+    function jsonToFormattedText($jsonData, string $separator = '<br>')
     {
         $data = json_decode($jsonData, true);
-        if (!is_array($data)) {
+        if (! is_array($data)) {
             return '';
         }
         $result = '';
 
         foreach ($data as $key => $value) {
             $key = ucwords(str_replace('_', ' ', $key));
-            $result .= ucfirst($key) . ': ' . $value . '<br>';
+            $result .= ucfirst($key).': '.$value.$separator;
         }
 
         return $result;
     }
 }
 
-if (!function_exists('jsonToPlainTextAdmin')) {
+if (! function_exists('jsonToPlainText')) {
+    function jsonToPlainText($jsonData)
+    {
+        return jsonToFormattedText($jsonData, '<br>');
+    }
+}
+
+if (! function_exists('jsonToPlainTextAdmin')) {
     function jsonToPlainTextAdmin($jsonData)
     {
-        $data = json_decode($jsonData, true);
-        $result = '';
-
-        foreach ($data as $key => $value) {
-            $key = ucwords(str_replace('_', ' ', $key));
-            $result .= ucfirst($key) . ': ' . $value . PHP_EOL;
-        }
-
-        return $result;
+        return jsonToFormattedText($jsonData, PHP_EOL);
     }
 }
 
 // Payment Gateway
-if (!function_exists('depositRedirectUrl')) {
+if (! function_exists('depositRedirectUrl')) {
     function depositRedirectUrl($deposit, $gateway)
     {
         return route('user.deposit.ipn', [$deposit->track_id, $gateway]);
     }
 }
 
-if (!function_exists('depositIpnRedirectUrl')) {
+if (! function_exists('depositIpnRedirectUrl')) {
     function depositIpnRedirectUrl()
     {
         return route('user.addfunds');
     }
 }
 
-if (!function_exists('depositCancelUrl')) {
+if (! function_exists('depositCancelUrl')) {
     function depositCancelUrl()
     {
         return route('user.deposit.cancel');
     }
 }
 
-
-if (!function_exists('orderRedirectUrl')) {
+if (! function_exists('orderRedirectUrl')) {
     function orderRedirectUrl($order, $gateway)
     {
         return route('user.order.ipn', [$order->track_id, $gateway]);
     }
 }
 
-if (!function_exists('orderIpnRedirectUrl')) {
+if (! function_exists('orderIpnRedirectUrl')) {
     function orderIpnRedirectUrl($order)
     {
         return ($order->product->isVoucher()) ? route('user.codes') : route('user.orders');
     }
 }
 
-if (!function_exists('orderCancelUrl')) {
+if (! function_exists('orderCancelUrl')) {
     function orderCancelUrl($order)
     {
         return ($order->product->isVoucher()) ? route('user.code.cancel') : route('user.order.cancel');
     }
 }
 
-if (!function_exists('getPercentageAmount')) {
+if (! function_exists('getPercentageAmount')) {
     function getPercentageAmount($amount, $percentage)
     {
         return amount(($amount * $percentage) / 100);

@@ -4,57 +4,36 @@ namespace App\Services;
 
 use App\Constants\Status;
 use App\Models\Deposit;
-use App\Models\Transaction;
-use App\Services\Gateway\GatewayInterface;
+use App\Services\Payment\TransactionCreator;
+use App\Services\Traits\ResolvesGateway;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class DepositService
 {
-    private const ALLOWED_GATEWAYS = ['uddoktapay', 'stripe', 'sslcommerz', 'bkash'];
-
-    private function resolveGateway(string $gateway): GatewayInterface
-    {
-        if (!in_array($gateway, self::ALLOWED_GATEWAYS)) {
-            throw new \Exception('Invalid payment gateway.');
-        }
-        $getwayObj = 'App\\Services\\Gateway\\' . $gateway . '\\Payment';
-        $getwayObj = app($getwayObj);
-        if (!($getwayObj instanceof GatewayInterface)) {
-            throw new \Exception('The Payment gateway must implement GatewayInterface.');
-        }
-        return $getwayObj;
-    }
+    use ResolvesGateway;
 
     public function addFund(Request $request)
     {
         try {
             $gateway = $request->input('gateway', 'uddoktapay');
-            $getwayObj = $this->resolveGateway($gateway);
+            $gatewayObj = $this->resolveGateway($gateway);
 
             $create = Deposit::create([
-                'user_id'  => user_id(),
-                'amount'   => $request->amount,
+                'user_id' => user_id(),
+                'amount' => $request->amount,
                 'track_id' => strRandom(),
             ]);
 
             $deposit = Deposit::where('id', $create->id)->orderBy('id', 'DESC')->with(['user'])->first();
 
-            $data = $getwayObj::prepareDepositData($deposit, $gateway);
+            $data = $gatewayObj::prepareDepositData($deposit, $gateway);
             $data = (object) $data;
         } catch (\Exception $exception) {
             return back()->with('error', __('Something went wrong.'));
         }
 
-        if (isset($data->error)) {
-            return back()->with('error', $data->message);
-        }
-
-        if (isset($data->redirect_url)) {
-            return redirect($data->redirect_url);
-        }
-        $page_title = 'Payment Confirm';
-        return view($data->view, compact('data', 'page_title', 'deposit'));
+        return $this->handleGatewayResponse($data, compact('deposit'));
     }
 
     public function payNow($depositId)
@@ -65,35 +44,26 @@ class DepositService
 
         try {
             $gateway = request('gateway', 'uddoktapay');
-            $getwayObj = $this->resolveGateway($gateway);
-            $data = $getwayObj::prepareDepositData($deposit, $gateway);
+            $gatewayObj = $this->resolveGateway($gateway);
+            $data = $gatewayObj::prepareDepositData($deposit, $gateway);
             $data = (object) $data;
         } catch (\Exception $exception) {
             return back()->with('error', __('Something went wrong.'));
         }
 
-        if (isset($data->error)) {
-            return back()->with('error', $data->message);
-        }
-
-        if (isset($data->redirect_url)) {
-            return redirect($data->redirect_url);
-        }
-
-        $page_title = 'Payment Confirm';
-        return view($data->view, compact('data', 'page_title', 'deposit'));
+        return $this->handleGatewayResponse($data, compact('deposit'));
     }
 
     public function gatewayIpn(Request $request, string $trx, string $gateway)
     {
         try {
             $deposit = Deposit::where('track_id', $trx)->orderBy('id', 'desc')->first();
-            if (!$deposit) {
+            if (! $deposit) {
                 throw new \Exception(__('Deposit ID is not found.'));
             }
 
-            $getwayObj = $this->resolveGateway($gateway);
-            $data = $getwayObj::depositIpn($request, $deposit, $gateway);
+            $gatewayObj = $this->resolveGateway($gateway);
+            $data = $gatewayObj::depositIpn($request, $deposit, $gateway);
         } catch (\Exception $exception) {
             return redirect()->route('user.addfunds')->with('error', $exception->getMessage());
         }
@@ -108,31 +78,42 @@ class DepositService
     public function completeDeposit(Deposit $deposit, string $paymentMethod, string $transactionId)
     {
         DB::transaction(function () use ($deposit, $paymentMethod, $transactionId) {
-            $exists = Transaction::where('transaction_id', $transactionId)->exists();
-            if ($exists) {
+            if (TransactionCreator::existsById($transactionId)) {
                 throw new \Exception(__('Transaction ID already exists.'));
             }
             if ($deposit->status == Status::UNPAID) {
-                // Update Deposit
                 $deposit['status'] = Status::PAID;
                 $deposit->update();
 
-                // Update User
                 $user = $deposit->user;
                 $user->balance += $deposit->amount;
                 $user->save();
 
-                // Add Transaction
-                $transaction = new Transaction();
-                $transaction->user_id = $deposit->user_id;
-                $transaction->deposit_id = $deposit->id;
-                $transaction->trx_type = Status::DEBIT;
-                $transaction->amount = $deposit->amount;
-                $transaction->payment_method = $paymentMethod;
-                $transaction->remarks = 'Deposit is being made using the ' . $paymentMethod;
-                $transaction->transaction_id = $transactionId;
-                $transaction->save();
+                TransactionCreator::create([
+                    'user_id' => $deposit->user_id,
+                    'deposit_id' => $deposit->id,
+                    'trx_type' => Status::DEBIT,
+                    'amount' => $deposit->amount,
+                    'payment_method' => $paymentMethod,
+                    'remarks' => 'Deposit is being made using the '.$paymentMethod,
+                    'transaction_id' => $transactionId,
+                ]);
             }
         }, 5);
+    }
+
+    private function handleGatewayResponse(object $data, array $viewData): mixed
+    {
+        if (isset($data->error)) {
+            return back()->with('error', $data->message);
+        }
+
+        if (isset($data->redirect_url)) {
+            return redirect($data->redirect_url);
+        }
+
+        $page_title = 'Payment Confirm';
+
+        return view($data->view, array_merge(compact('data', 'page_title'), $viewData));
     }
 }

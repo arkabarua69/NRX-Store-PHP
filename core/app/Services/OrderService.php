@@ -3,44 +3,29 @@
 namespace App\Services;
 
 use App\Constants\OrderStatus;
-use App\Constants\Role;
 use App\Constants\Status;
 use App\Filters\OrderFilter;
 use App\Helpers\ActivityLogger;
-use App\Mail\OrderPlaced;
-use App\Mail\OrderStatusChanged;
 use App\Models\AutoVoucher;
 use App\Models\Deposit;
 use App\Models\Order;
-use App\Models\Transaction;
 use App\Models\User;
 use App\Models\Variation;
 use App\Models\Voucher;
-use App\Services\Gateway\GatewayInterface;
+use App\Services\Payment\AutoTopupDispatcher;
+use App\Services\Payment\OrderNotifier;
+use App\Services\Payment\TransactionCreator;
+use App\Services\Payment\VoucherFulfillment;
 use App\Services\TopupProvider\Validators\StockValidator;
+use App\Services\Traits\ResolvesGateway;
 use Exception;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class OrderService
 {
-    private const ALLOWED_GATEWAYS = ['uddoktapay', 'stripe', 'sslcommerz', 'bkash'];
-
-    private function resolveGateway(string $gateway): GatewayInterface
-    {
-        if (!in_array($gateway, self::ALLOWED_GATEWAYS)) {
-            throw new \Exception('Invalid payment gateway.');
-        }
-        $getwayObj = 'App\\Services\\Gateway\\' . $gateway . '\\Payment';
-        $getwayObj = app($getwayObj);
-        if (!($getwayObj instanceof GatewayInterface)) {
-            throw new \Exception('The Payment gateway must implement GatewayInterface.');
-        }
-        return $getwayObj;
-    }
+    use ResolvesGateway;
 
     public function getMine(array $queryParams = [], bool $isVoucher = false)
     {
@@ -60,7 +45,7 @@ class OrderService
 
         $orders = app(OrderFilter::class)->getResults([
             'builder' => $queryBuilder,
-            'params'  => $queryParams,
+            'params' => $queryParams,
         ]);
 
         return $orders;
@@ -88,13 +73,13 @@ class OrderService
         }
 
         $orderData = [
-            'user_id'      => user_id(),
-            'product_id'   => $variation->product->id,
+            'user_id' => user_id(),
+            'product_id' => $variation->product->id,
             'variation_id' => $variation->id,
-            'quantity'     => $request->input('quantity', 1),
-            'amount'       => $amount_cal,
-            'profit'       => $profit_cal,
-            'track_id'     => strRandom(),
+            'quantity' => $request->input('quantity', 1),
+            'amount' => $amount_cal,
+            'profit' => $profit_cal,
+            'track_id' => strRandom(),
         ];
 
         if (in_array($variation->product->type, [Status::TOPUP, Status::INGAME])) {
@@ -115,6 +100,7 @@ class OrderService
             try {
                 $this->completeOrderWithWallet($order, $request->payment_method);
                 $redirect = ($order->product->isVoucher()) ? route('user.codes') : route('user.orders');
+
                 return redirect($redirect)->with('success', __('Order Successful.'));
             } catch (\Exception $exception) {
                 return back()->with('error', __('Payment processing failed.'));
@@ -123,30 +109,21 @@ class OrderService
 
         try {
             $gateway = $request->input('gateway', 'uddoktapay');
-            $getwayObj = $this->resolveGateway($gateway);
-            $data = $getwayObj::prepareOrderData($order, $gateway);
+            $gatewayObj = $this->resolveGateway($gateway);
+            $data = $gatewayObj::prepareOrderData($order, $gateway);
             $data = (object) $data;
         } catch (\Exception $exception) {
             return back()->with('error', $exception->getMessage());
         }
 
-        if (isset($data->error)) {
-            return back()->with('error', $data->message);
-        }
-
-        if (isset($data->redirect_url)) {
-            return redirect($data->redirect_url);
-        }
-
-        $page_title = 'Payment Confirm';
-        return view($data->view, compact('data', 'page_title', 'order'));
+        return $this->handleGatewayResponse($data, compact('order'));
     }
 
     public function payNow($orderId)
     {
         $order = Order::where('id', $orderId)->orderBy('id', 'DESC')->with(['user', 'variation', 'product'])->first();
 
-        if (!$order) {
+        if (! $order) {
             return back()->with('error', __('Order not found.'));
         }
 
@@ -154,7 +131,7 @@ class OrderService
             $query->where('status', Status::AVAILABLE);
         }])->find($order->variation_id);
 
-        if (!$variation) {
+        if (! $variation) {
             return back()->with('error', __('Sorry, this product is out of stock.'));
         }
 
@@ -166,6 +143,7 @@ class OrderService
             try {
                 $this->completeOrderWithWallet($order, Status::WALLET);
                 $redirect = ($order->product->isVoucher()) ? route('user.codes') : route('user.orders');
+
                 return redirect($redirect)->with('success', __('Order Successful.'));
             } catch (\Exception $exception) {
                 return back()->with('error', __('Payment processing failed.'));
@@ -174,35 +152,26 @@ class OrderService
 
         try {
             $gateway = request('gateway', 'uddoktapay');
-            $getwayObj = $this->resolveGateway($gateway);
-            $data = $getwayObj::prepareOrderData($order, $gateway);
+            $gatewayObj = $this->resolveGateway($gateway);
+            $data = $gatewayObj::prepareOrderData($order, $gateway);
             $data = (object) $data;
         } catch (\Exception $exception) {
             return back()->with('error', $exception->getMessage());
         }
 
-        if (isset($data->error)) {
-            return back()->with('error', $data->message);
-        }
-
-        if (isset($data->redirect_url)) {
-            return redirect($data->redirect_url);
-        }
-
-        $page_title = 'Payment Confirm';
-        return view($data->view, compact('data', 'page_title', 'order'));
+        return $this->handleGatewayResponse($data, compact('order'));
     }
 
     public function gatewayIpn(Request $request, string $trx, string $gateway)
     {
         try {
             $order = Order::where('track_id', $trx)->orderBy('id', 'DESC')->with(['user', 'variation', 'product'])->first();
-            if (!$order) {
+            if (! $order) {
                 throw new \Exception(__('Order not found.'));
             }
 
-            $getwayObj = $this->resolveGateway($gateway);
-            $data = $getwayObj::orderIpn($request, $order, $gateway);
+            $gatewayObj = $this->resolveGateway($gateway);
+            $data = $gatewayObj::orderIpn($request, $order, $gateway);
         } catch (\Exception $exception) {
             return redirect()->route('user.account')->with('error', __('Payment verification failed.'));
         }
@@ -220,23 +189,19 @@ class OrderService
             $query->where('status', Status::AVAILABLE);
         }])->find($order->variation_id);
 
-        if (!$variation) {
+        if (! $variation) {
             $this->completeDeposit($order, $paymentMethod, $transactionId);
             throw new \Exception(__('Sorry, this product is out of stock. Your payment amount has been added to your wallet.'));
         }
 
         $stockValidator = app(StockValidator::class);
-        if (!$stockValidator->validateBeforePlacement($order)) {
+        if (! $stockValidator->validateBeforePlacement($order)) {
             $this->completeDeposit($order, $paymentMethod, $transactionId);
             throw new \Exception(__('Sorry, this product is currently out of stock with provider. Your payment amount has been added to your wallet.'));
         }
 
         if ($order->product->isVoucher()) {
-            $vouchers = Voucher::where('status', Status::AVAILABLE)
-                ->where('variation_id', $order->variation_id)
-                ->limit($order->quantity)
-                ->orderBy('id', 'DESC')
-                ->get();
+            $vouchers = VoucherFulfillment::fetchAvailableVouchers($order->variation_id, $order->quantity);
 
             if ($vouchers->count() < $order->quantity) {
                 throw new \Exception(__('Insufficient vouchers available.'));
@@ -244,8 +209,7 @@ class OrderService
         }
 
         DB::transaction(function () use ($order, $paymentMethod, $transactionId, $vouchers) {
-            $exists = Transaction::where('transaction_id', $transactionId)->exists();
-            if ($exists) {
+            if (TransactionCreator::existsById($transactionId)) {
                 throw new \Exception(__('Transaction ID already exists.'));
             }
             if ($order->isPending()) {
@@ -266,79 +230,26 @@ class OrderService
                 );
 
                 if ($order->product->isVoucher()) {
-                    $variation = $order->variation;
-                    $variation->stock -= $vouchers->count();
-                    $variation->save();
-
-                    $voucherCodes = [];
-                    foreach ($vouchers as $index => $voucher) {
-                        $voucherCodes[] = is_array($voucher->code) ? implode(',', $voucher->code) : $voucher->code;
-                        $voucher->status = Status::SOLD;
-                        $voucher->order_id = $order->id;
-                        $voucher->save();
-
-                        if ($index < $order->quantity - 1) {
-                            $voucherCodes[] = ',';
-                        }
-                    }
-
-                    $order['voucher_code'] = implode('', $voucherCodes);
-                    $order->update();
+                    VoucherFulfillment::assignVouchersToOrder($order, $vouchers);
                 } else {
-                    $variation = $order->variation;
-                    $variation->stock -= 1;
-                    $variation->save();
+                    VoucherFulfillment::decrementStock($order);
                 }
 
-                $transaction = new Transaction();
-                $transaction->user_id       = $order->user_id;
-                $transaction->order_id      = $order->id;
-                $transaction->trx_type      = Status::CREDIT;
-                $transaction->amount        = $order->amount;
-                $transaction->payment_method = $paymentMethod;
-                $transaction->remarks       = "Product purchased via {$paymentMethod}, Order ID: {$order->id}";
-                $transaction->transaction_id = $transactionId;
-                $transaction->save();
+                TransactionCreator::create([
+                    'user_id' => $order->user_id,
+                    'order_id' => $order->id,
+                    'trx_type' => Status::CREDIT,
+                    'amount' => $order->amount,
+                    'payment_method' => $paymentMethod,
+                    'remarks' => "Product purchased via {$paymentMethod}, Order ID: {$order->id}",
+                    'transaction_id' => $transactionId,
+                ]);
 
                 $this->addTransactionId($order->id, $transactionId);
                 $this->handleReseller($order);
 
-                try {
-                    if (gs()->smtp_from_address && gs()->smtp_host && gs()->smtp_password && gs()->smtp_port && gs()->smtp_username) {
-                        foreach (User::where('role', Role::ADMIN)->cursor() as $admin) {
-                            Mail::to($admin->email)->queue(new OrderPlaced($order));
-                        }
-                        Mail::to($order->user->email)->queue(new OrderStatusChanged($order));
-                    }
-                } catch (Exception $e) {
-                    Log::warning('Order notification mail failed', ['order' => $order->id, 'error' => $e->getMessage()]);
-                }
-
-                try {
-                    $autoVoucher = AutoVoucher::where('status', Status::AVAILABLE)
-                        ->where('variation_id', $order->variation_id)
-                        ->first();
-
-                    if ($order->product->isTopup() && $order->variation->isAutomatic() && $autoVoucher && gs()->enable_auto_topup && gs()->free_fire_server_url && gs()->free_fire_server_api_key) {
-                        $order->status = OrderStatus::AUTOPROCESSING;
-                        $order->voucher_code = $autoVoucher->code;
-                        $order->save();
-
-                        $autoVoucher->order_id = $order->id;
-                        $autoVoucher->status = Status::SOLD;
-                        $autoVoucher->save();
-
-                        ActivityLogger::log(
-                            "Order #{$order->id} sent for auto-processing via {$order->variation->provider}",
-                            $order,
-                            logName: 'order',
-                            event: 'auto_processing',
-                            properties: ['provider' => $order->variation->provider]
-                        );
-                    }
-                } catch (Exception $e) {
-                    Log::warning('Auto-topup dispatch failed', ['order' => $order->id, 'error' => $e->getMessage()]);
-                }
+                OrderNotifier::notifyOrderCompleted($order);
+                AutoTopupDispatcher::dispatchIfEligible($order);
             }
         }, 5);
     }
@@ -349,16 +260,12 @@ class OrderService
             $query->where('status', Status::AVAILABLE);
         }])->find($order->variation_id);
 
-        if (!$variation) {
+        if (! $variation) {
             throw new \Exception(__('Sorry, this product is out of stock.'));
         }
 
         if ($order->product->isVoucher()) {
-            $vouchers = Voucher::where('status', Status::AVAILABLE)
-                ->where('variation_id', $order->variation_id)
-                ->limit($order->quantity)
-                ->orderBy('id', 'DESC')
-                ->get();
+            $vouchers = VoucherFulfillment::fetchAvailableVouchers($order->variation_id, $order->quantity);
 
             if ($vouchers->count() < $order->quantity) {
                 throw new \Exception(__('Insufficient vouchers available.'));
@@ -371,84 +278,35 @@ class OrderService
                 throw new \Exception(__('Insufficient Balance.'));
             }
             if ($order->isPending()) {
-                // Update Order status
                 $order['status'] = ($order->product->isVoucher()) ? Status::COMPLETED : Status::PROCESSING;
                 $order->update();
 
-                // Deduct wallet balance
                 $user->balance -= $order->amount;
                 $user->save();
 
                 if ($order->product->isVoucher()) {
-                    // Update Variation stock
-                    $variation = $order->variation;
-                    $variation->stock -= $vouchers->count();
-                    $variation->save();
-
-                    // Assign voucher codes to order
-                    $voucherCodes = [];
-                    foreach ($vouchers as $index => $voucher) {
-                        $voucherCodes[] = is_array($voucher->code) ? implode(',', $voucher->code) : $voucher->code;
-                        $voucher->status = Status::SOLD;
-                        $voucher->order_id = $order->id;
-                        $voucher->save();
-
-                        if ($index < $order->quantity - 1) {
-                            $voucherCodes[] = ',';
-                        }
-                    }
-
-                    $order['voucher_code'] = implode('', $voucherCodes);
-                    $order->update();
+                    VoucherFulfillment::assignVouchersToOrder($order, $vouchers);
                 } else {
-                    // Update Variation stock
-                    $variation = $order->variation;
-                    $variation->stock -= 1;
-                    $variation->save();
+                    VoucherFulfillment::decrementStock($order);
                 }
 
-                // Add Transaction
                 $transactionId = strRandom();
-                $transaction = new Transaction();
-                $transaction->user_id        = $order->user_id;
-                $transaction->order_id       = $order->id;
-                $transaction->trx_type       = Status::CREDIT;
-                $transaction->amount         = $order->amount;
-                $transaction->payment_method = $paymentMethod;
-                $transaction->remarks        = "Product purchased via {$paymentMethod}, Order ID: {$order->id}";
-                $transaction->transaction_id = $transactionId;
-                $transaction->save();
+
+                TransactionCreator::create([
+                    'user_id' => $order->user_id,
+                    'order_id' => $order->id,
+                    'trx_type' => Status::CREDIT,
+                    'amount' => $order->amount,
+                    'payment_method' => $paymentMethod,
+                    'remarks' => "Product purchased via {$paymentMethod}, Order ID: {$order->id}",
+                    'transaction_id' => $transactionId,
+                ]);
 
                 $this->addTransactionId($order->id, $transactionId);
                 $this->handleReseller($order);
 
-                try {
-                    if (gs()->smtp_from_address && gs()->smtp_host && gs()->smtp_password && gs()->smtp_port && gs()->smtp_username) {
-                        foreach (User::where('role', Role::ADMIN)->cursor() as $admin) {
-                            Mail::to($admin->email)->queue(new OrderPlaced($order));
-                        }
-                    }
-                } catch (Exception $e) {
-                    // Mail failure should not break the order
-                }
-
-                try {
-                    $autoVoucher = AutoVoucher::where('status', Status::AVAILABLE)
-                        ->where('variation_id', $order->variation_id)
-                        ->first();
-
-                    if ($order->product->isTopup() && $order->variation->isAutomatic() && $autoVoucher && gs()->enable_auto_topup && gs()->free_fire_server_url && gs()->free_fire_server_api_key) {
-                        $order->status = OrderStatus::AUTOPROCESSING;
-                        $order->voucher_code = $autoVoucher->code;
-                        $order->save();
-
-                        $autoVoucher->order_id = $order->id;
-                        $autoVoucher->status = Status::SOLD;
-                        $autoVoucher->save();
-                    }
-                } catch (Exception $e) {
-                    // Auto-topup failure should not break the order
-                }
+                OrderNotifier::notifyAdminsOrderPlaced($order);
+                AutoTopupDispatcher::dispatchIfEligible($order);
             }
         }, 5);
     }
@@ -456,29 +314,26 @@ class OrderService
     private function completeDeposit(Order $order, string $paymentMethod, string $transactionId)
     {
         DB::transaction(function () use ($order, $paymentMethod, $transactionId) {
-            // Credit wallet
             $user = $order->user;
             $user->balance += $order->amount;
             $user->save();
 
-            // Create Deposit record
             $deposit = new Deposit();
-            $deposit->user_id  = $order->user_id;
-            $deposit->amount   = $order->amount;
+            $deposit->user_id = $order->user_id;
+            $deposit->amount = $order->amount;
             $deposit->track_id = strRandom();
-            $deposit->status   = Status::PAID;
+            $deposit->status = Status::PAID;
             $deposit->save();
 
-            // Add Transaction
-            $transaction = new Transaction();
-            $transaction->user_id        = $order->user_id;
-            $transaction->deposit_id     = $deposit->id;
-            $transaction->trx_type       = Status::DEBIT;
-            $transaction->amount         = $order->amount;
-            $transaction->payment_method = $paymentMethod;
-            $transaction->remarks        = 'Wallet topped up due to out-of-stock product via ' . $paymentMethod;
-            $transaction->transaction_id = $transactionId;
-            $transaction->save();
+            TransactionCreator::create([
+                'user_id' => $order->user_id,
+                'deposit_id' => $deposit->id,
+                'trx_type' => Status::DEBIT,
+                'amount' => $order->amount,
+                'payment_method' => $paymentMethod,
+                'remarks' => 'Wallet topped up due to out-of-stock product via '.$paymentMethod,
+                'transaction_id' => $transactionId,
+            ]);
 
             $this->addTransactionId($order->id, $transactionId);
         }, 5);
@@ -542,23 +397,16 @@ class OrderService
                 properties: ['refund_amount' => $refundAmount]
             );
 
-            $transaction = new Transaction();
-            $transaction->user_id        = $order->user_id;
-            $transaction->order_id       = $order->id;
-            $transaction->trx_type       = Status::DEBIT;
-            $transaction->amount         = $refundAmount;
-            $transaction->payment_method = Status::WALLET;
-            $transaction->remarks        = 'Refund for cancelled order ID: ' . $order->id;
-            $transaction->transaction_id = strRandom();
-            $transaction->save();
+            TransactionCreator::create([
+                'user_id' => $order->user_id,
+                'order_id' => $order->id,
+                'trx_type' => Status::DEBIT,
+                'amount' => $refundAmount,
+                'payment_method' => Status::WALLET,
+                'remarks' => 'Refund for cancelled order ID: '.$order->id,
+            ]);
 
-            try {
-                if (gs()->smtp_from_address && gs()->smtp_host && gs()->smtp_password && gs()->smtp_port && gs()->smtp_username) {
-                    Mail::to($order->user->email)->queue(new OrderStatusChanged($order));
-                }
-            } catch (Exception $e) {
-                Log::warning('Refund notification failed', ['order' => $order->id, 'error' => $e->getMessage()]);
-            }
+            OrderNotifier::notifyUserStatusChanged($order);
         }, 5);
     }
 
@@ -570,15 +418,14 @@ class OrderService
             $user->balance += $percentageAmount;
             $user->save();
 
-            $transaction = new Transaction();
-            $transaction->user_id        = $order->user_id;
-            $transaction->order_id       = $order->id;
-            $transaction->trx_type       = Status::DEBIT;
-            $transaction->amount         = $percentageAmount;
-            $transaction->payment_method = Status::WALLET;
-            $transaction->remarks        = 'Reseller bonus for order ID: ' . $order->id;
-            $transaction->transaction_id = strRandom();
-            $transaction->save();
+            TransactionCreator::create([
+                'user_id' => $order->user_id,
+                'order_id' => $order->id,
+                'trx_type' => Status::DEBIT,
+                'amount' => $percentageAmount,
+                'payment_method' => Status::WALLET,
+                'remarks' => 'Reseller bonus for order ID: '.$order->id,
+            ]);
         }
     }
 
@@ -598,5 +445,20 @@ class OrderService
                 $autovoucher->save();
             }
         }
+    }
+
+    private function handleGatewayResponse(object $data, array $viewData): mixed
+    {
+        if (isset($data->error)) {
+            return back()->with('error', $data->message);
+        }
+
+        if (isset($data->redirect_url)) {
+            return redirect($data->redirect_url);
+        }
+
+        $page_title = 'Payment Confirm';
+
+        return view($data->view, array_merge(compact('data', 'page_title'), $viewData));
     }
 }
