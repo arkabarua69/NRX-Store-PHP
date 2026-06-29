@@ -79,6 +79,24 @@ class OrderService
             return back()->with('error', __('Sorry, this voucher is out of stock.'));
         }
 
+        $pendingOrder = Order::where('user_id', user_id())
+            ->where('variation_id', $request->variation_id)
+            ->where('status', Status::PENDING)
+            ->first();
+
+        if ($pendingOrder) {
+            if (gs()->wallet && $request->payment_method === Status::WALLET) {
+                try {
+                    $this->completeOrderWithWallet($pendingOrder, $request->payment_method);
+                    $redirect = ($pendingOrder->product->isVoucher()) ? route('user.codes') : route('user.orders');
+                    return redirect($redirect)->with('success', __('Order Successful.'));
+                } catch (\Exception $exception) {
+                    return back()->with('error', $exception->getMessage());
+                }
+            }
+            return redirect()->route('user.order.pay', ['id' => $pendingOrder->id]);
+        }
+
         $amount_cal = $variation->price * $request->input('quantity', 1);
         $variation_buy_rate = $variation->buy_rate;
         $profit_cal = 0.00;
