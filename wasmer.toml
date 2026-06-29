@@ -7,7 +7,7 @@ license = "MIT"
 repository = "https://github.com/arkabarua69/NRX-Store-PHP"
 
 [build]
-command = "curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get install -y nodejs && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer && cd core && composer install --no-dev --optimize-autoloader && npm install && npm run build && mkdir -p storage/app/livewire-tmp && mkdir -p storage/framework/cache/data && mkdir -p storage/framework/sessions && mkdir -p storage/framework/views && mkdir -p storage/logs && mkdir -p bootstrap/cache && mkdir -p uploads/media && mkdir -p uploads/settings && chmod -R 775 storage bootstrap/cache uploads"
+command = "curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get install -y nodejs && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer && cd core && composer install --no-dev --optimize-autoloader && npm install && npm run build && mkdir -p storage/app/livewire-tmp && mkdir -p storage/framework/cache/data && mkdir -p storage/framework/sessions && mkdir -p storage/framework/views && mkdir -p storage/logs && mkdir -p bootstrap/cache && chmod -R 775 storage bootstrap/cache && cd .. && mkdir -p uploads/media && mkdir -p uploads/settings && chmod -R 775 uploads"
 
 [deploy]
 memory = 512

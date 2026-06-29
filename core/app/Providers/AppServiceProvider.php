@@ -91,6 +91,7 @@ class AppServiceProvider extends ServiceProvider
             base_path('../uploads'),
             base_path('../uploads/settings'),
             base_path('../uploads/media'),
+            base_path('../uploads/livewire-tmp'),
         ];
 
         foreach ($dirs as $dir) {
