@@ -17,6 +17,7 @@ use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Pages\SettingsPage;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Log;
 use Webbingbrasil\FilamentCopyActions\Forms\Actions\CopyAction;
 
 class Settings extends SettingsPage
@@ -331,6 +332,7 @@ class Settings extends SettingsPage
         try {
             Artisan::call('config:clear');
         } catch (\Exception $e) {
+            Log::error('Failed to clear config cache after settings save: ' . $e->getMessage());
         }
     }
 }

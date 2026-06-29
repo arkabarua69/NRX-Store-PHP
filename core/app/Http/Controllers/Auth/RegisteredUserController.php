@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Auth\Events\Registered;
 use App\Providers\RouteServiceProvider;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\Mailer\Exception\TransportException;
 
 class RegisteredUserController extends Controller
@@ -51,7 +52,10 @@ class RegisteredUserController extends Controller
                 event(new Registered($user));
             }
         } catch (TransportException $e) {
-            //
+            Log::error('Registration verification email failed: ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'email' => $user->email,
+            ]);
         }
 
         Auth::login($user);

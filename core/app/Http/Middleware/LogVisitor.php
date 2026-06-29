@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class LogVisitor
 {
@@ -27,7 +28,7 @@ class LogVisitor
                 }
             }
         } catch (\Exception $e) {
-            // Visitor logging should not break the application
+            Log::warning('Visitor logging failed: ' . $e->getMessage());
         }
 
         return $next($request);

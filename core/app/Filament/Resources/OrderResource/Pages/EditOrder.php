@@ -11,6 +11,7 @@ use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Log;
 
 class EditOrder extends EditRecord
 {
@@ -38,7 +39,14 @@ class EditOrder extends EditRecord
                     ->send();
             }
         } catch (ModelNotFoundException $e) {
-            //
+            Log::warning('Order not found during cancellation attempt', ['id' => $data['id']]);
+        } catch (\Exception $e) {
+            Log::error('Order cancellation/refund failed', ['id' => $data['id'], 'error' => $e->getMessage()]);
+            Notification::make()
+                ->title('Refund failed.')
+                ->danger()
+                ->body($e->getMessage())
+                ->send();
         }
     }
 }

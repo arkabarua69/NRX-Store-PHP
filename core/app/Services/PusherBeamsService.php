@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Log;
+
 class PusherBeamsService
 {
     protected string $instanceId;
@@ -65,8 +67,21 @@ class PusherBeamsService
         ]);
 
         $response = curl_exec($ch);
+        $curlError = curl_error($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
+
+        if ($curlError) {
+            Log::error('Pusher Beams request failed', ['curl_error' => $curlError]);
+            return false;
+        }
+
+        if ($httpCode !== 200) {
+            Log::warning('Pusher Beams returned non-200 response', [
+                'http_code' => $httpCode,
+                'response' => $response,
+            ]);
+        }
 
         return $httpCode === 200;
     }
