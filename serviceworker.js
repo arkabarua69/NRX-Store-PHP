@@ -1,3 +1,5 @@
+importScripts("https://js.pusher.com/beams/service-worker.js");
+
 var staticCacheName = "pwa-v" + new Date().getTime();
 var offlinePage = '/offline.html';
 

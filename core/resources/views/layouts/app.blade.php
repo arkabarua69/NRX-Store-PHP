@@ -87,6 +87,9 @@
     <link rel="stylesheet" href="{{ asset('assets/template/css/custom-styles.css') }}?<?=rand(0000,9999)?>"> 
 
     {!! $settings->header_tags !!}
+
+    {{-- Pusher Beams --}}
+    <script src="https://js.pusher.com/beams/2.1.0/push-notifications-cdn.js"></script>
 </head>
 
 <body>
@@ -531,6 +534,16 @@
     @stack('script')
 
     {{ $settings->footer_js }}
+
+    <script>
+        const beamsClient = new PusherPushNotifications.Client({
+            instanceId: '{{ env("PUSHER_APP_ID") }}',
+        });
+        beamsClient.start()
+            .then(() => beamsClient.addDeviceInterest('hello'))
+            .then(() => console.log('Pusher Beams: Registered & subscribed!'))
+            .catch(console.error);
+    </script>
 </div>
 </body>
 

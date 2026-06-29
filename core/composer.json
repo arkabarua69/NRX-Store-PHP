@@ -18,7 +18,6 @@
         "laravel/sanctum": "^3.3",
         "laravel/socialite": "^5.11",
         "laravel/tinker": "^2.8",
-        "rtraselbd/laravel-installer": "1.x-dev",
         "spatie/laravel-medialibrary": "^10.0.0",
         "webbingbrasil/filament-copyactions": "^3.0"
     },
@@ -80,12 +79,6 @@
             "php-http/discovery": true
         }
     },
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/rtraselbd/laravel-installer.git"
-        }
-    ],
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "prefer-stable": true
 }
