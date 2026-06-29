@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\File;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -28,6 +29,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->ensureStorageDirectories();
+
         $viewShare['settings'] = gs();
         view()->share($viewShare);
 
@@ -74,5 +77,26 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Model::preventLazyLoading(! app()->isProduction());
+    }
+
+    protected function ensureStorageDirectories(): void
+    {
+        $dirs = [
+            storage_path('app/livewire-tmp'),
+            storage_path('app/public/uploads'),
+            storage_path('app/public/settings'),
+            storage_path('app/public/media'),
+            storage_path('framework/cache/data'),
+            storage_path('framework/sessions'),
+            storage_path('framework/views'),
+            storage_path('logs'),
+            base_path('bootstrap/cache'),
+        ];
+
+        foreach ($dirs as $dir) {
+            if (!File::isDirectory($dir)) {
+                File::makeDirectory($dir, 0775, true, true);
+            }
+        }
     }
 }
