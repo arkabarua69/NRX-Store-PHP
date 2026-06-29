@@ -88,9 +88,9 @@ class AppServiceProvider extends ServiceProvider
             storage_path('framework/views'),
             storage_path('logs'),
             base_path('bootstrap/cache'),
-            public_path('uploads'),
-            public_path('uploads/settings'),
-            public_path('uploads/media'),
+            base_path('../uploads'),
+            base_path('../uploads/settings'),
+            base_path('../uploads/media'),
         ];
 
         foreach ($dirs as $dir) {

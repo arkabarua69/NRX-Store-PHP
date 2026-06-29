@@ -2,7 +2,8 @@
 
 $uri = urldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
 
-if ($uri !== '/' && file_exists(__DIR__ . $uri)) {
+// Serve existing static files directly
+if ($uri !== '/' && file_exists(__DIR__ . $uri) && is_file(__DIR__ . $uri)) {
     return false;
 }
 
