@@ -7,7 +7,7 @@ license = "MIT"
 repository = "https://github.com/arkabarua69/NRX-Store-PHP"
 
 [build]
-command = "cd core && composer install --no-dev --optimize-autoloader && npm install && npm run build"
+command = "curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer && cd core && composer install --no-dev --optimize-autoloader && npm install && npm run build"
 
 [deploy]
 memory = 512
