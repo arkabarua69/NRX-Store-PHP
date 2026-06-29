@@ -3,7 +3,7 @@
 /core/node_modules/
 
 # Environment files
-/core/.env
+/core/.env.example
 
 # Build output
 /build/
