@@ -16,4 +16,4 @@ cpu = 1
 [[command]]
 name = "php-server"
 module = "php/php"
-args = ["-S", "0.0.0.0:8080", "router.php"]
+args = ["-S", "0.0.0.0:8080", "-t", ".", "router.php"]
