@@ -258,7 +258,8 @@ Action::make('completed')
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->with(['variation', 'product', 'user'])
+            ->with(['variation', 'product', 'user', 'transaction'])
+            ->whereHas('transaction')
             ->whereDoesntHave('product', function (Builder $query) {
                 $query->where('type', Status::VOUCHER);
             })
