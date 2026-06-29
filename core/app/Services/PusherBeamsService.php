@@ -10,8 +10,8 @@ class PusherBeamsService
 
     public function __construct()
     {
-        $this->instanceId = config('services.pusher_beams.instance_id', env('PUSHER_APP_ID'));
-        $this->secretKey = config('services.pusher_beams.secret_key', env('PUSHER_APP_SECRET'));
+        $this->instanceId = config('services.pusher_beams.instance_id', env('PUSHER_BEAMS_INSTANCE_ID'));
+        $this->secretKey = config('services.pusher_beams.secret_key', env('PUSHER_BEAMS_SECRET_KEY'));
         $this->endpoint = "https://{$this->instanceId}.pushnotifications.pusher.com/publish_api/v1/instances/{$this->instanceId}/publishes";
     }
 
