@@ -34,7 +34,7 @@ class Settings extends SettingsPage
     protected function mutateFormDataBeforeFill(array $data): array
     {
         $data['google_callback'] = config('services.google.redirect');
-        $data['cron_job'] = "curl -s " . route('cron') . " >/dev/null 2>&1";
+        $data['cron_job'] = "curl -s " . (route('cron', [], false) ?: url('/cron')) . " >/dev/null 2>&1";
 
         return $data;
     }
