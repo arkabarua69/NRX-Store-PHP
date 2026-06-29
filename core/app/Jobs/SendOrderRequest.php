@@ -50,8 +50,25 @@ class SendOrderRequest implements ShouldQueue
         try {
             $this->order->variation->providerType($this->order)->placeOrder($this->autoVoucher);
         } catch (Exception $e) {
+            Log::error('SendOrderRequest failed, retrying in 60s', [
+                'order_id' => $this->order->id,
+                'attempt' => $this->attempts(),
+                'error' => $e->getMessage(),
+            ]);
             $this->release(60);
         }
+    }
+
+    /**
+     * Handle a job failure.
+     */
+    public function failed(\Throwable $exception): void
+    {
+        Log::error('SendOrderRequest permanently failed', [
+            'order_id' => $this->order->id,
+            'error' => $exception->getMessage(),
+            'exception' => $exception,
+        ]);
     }
 
     /**

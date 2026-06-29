@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -46,7 +47,7 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('menus', $menus);
             });
         } catch (\Exception $e) {
-            //throw $th;
+            Log::error('Failed to register view composer for layouts.app: ' . $e->getMessage());
         }
 
         Blade::directive('PWA', function () {

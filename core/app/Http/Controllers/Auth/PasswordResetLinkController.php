@@ -6,6 +6,7 @@ use Illuminate\View\View;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Symfony\Component\Mailer\Exception\TransportException;
 
@@ -38,6 +39,7 @@ class PasswordResetLinkController extends Controller
                 $request->only('email')
             );
         } catch (TransportException $e) {
+            Log::error('Password reset email transport failed: ' . $e->getMessage());
             $status = __('SMTP Connection Error.');
         }
         

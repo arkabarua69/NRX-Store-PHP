@@ -106,6 +106,12 @@ class OrderService
                 return Order::create($orderData);
             });
         } catch (Exception $e) {
+            Log::error('Order creation failed', [
+                'error' => $e->getMessage(),
+                'user_id' => $orderData['user_id'] ?? null,
+                'product_id' => $orderData['product_id'] ?? null,
+                'variation_id' => $orderData['variation_id'] ?? null,
+            ]);
             return back()->with('error', __('Something went wrong.'));
         }
 
@@ -429,7 +435,7 @@ class OrderService
                         }
                     }
                 } catch (Exception $e) {
-                    // Mail failure should not break the order
+                    Log::warning('Order notification mail failed', ['order' => $order->id, 'error' => $e->getMessage()]);
                 }
 
                 try {
@@ -447,7 +453,7 @@ class OrderService
                         $autoVoucher->save();
                     }
                 } catch (Exception $e) {
-                    // Auto-topup failure should not break the order
+                    Log::warning('Auto-topup dispatch failed', ['order' => $order->id, 'error' => $e->getMessage()]);
                 }
             }
         }, 5);
