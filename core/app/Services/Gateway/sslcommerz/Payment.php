@@ -82,7 +82,14 @@ class Payment implements GatewayInterface
             $validationUrl = 'https://secure.sslcommerz.com/validator/api/validationserverAPI.php';
         }
 
-        $validationUrl .= '?val_id=' . $request->val_id . '&store_id=' . $storeId . '&store_passwd=' . $storePassword . '&v=1&format=json';
+        $queryParams = http_build_query([
+            'val_id' => $request->val_id,
+            'store_id' => $storeId,
+            'store_passwd' => $storePassword,
+            'v' => 1,
+            'format' => 'json',
+        ]);
+        $validationUrl .= '?' . $queryParams;
 
         try {
             $ch = curl_init();
@@ -188,7 +195,14 @@ class Payment implements GatewayInterface
             $validationUrl = 'https://secure.sslcommerz.com/validator/api/validationserverAPI.php';
         }
 
-        $validationUrl .= '?val_id=' . $request->val_id . '&store_id=' . $storeId . '&store_passwd=' . $storePassword . '&v=1&format=json';
+        $queryParams = http_build_query([
+            'val_id' => $request->val_id,
+            'store_id' => $storeId,
+            'store_passwd' => $storePassword,
+            'v' => 1,
+            'format' => 'json',
+        ]);
+        $validationUrl .= '?' . $queryParams;
 
         try {
             $ch = curl_init();

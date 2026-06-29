@@ -42,13 +42,15 @@ class Payment implements GatewayInterface
             $stripe = new StripeApi();
 
             $sessionId = $request->session_id;
-            if (!$sessionId) {
-                throw new Exception('No session ID provided');
+            if (!$sessionId || !preg_match('/^cs_/', $sessionId)) {
+                throw new Exception('Invalid session ID');
             }
 
             $session = $stripe->retrieveSession($sessionId);
 
-            if ($session['payment_status'] === 'paid') {
+            if ($session['payment_status'] === 'paid'
+                && isset($session['metadata']['track_id'])
+                && $session['metadata']['track_id'] === $deposit->track_id) {
                 $depositService = new DepositService();
                 $depositService->completeDeposit($deposit, 'stripe', $session['id']);
             } else {
@@ -95,13 +97,15 @@ class Payment implements GatewayInterface
             $stripe = new StripeApi();
 
             $sessionId = $request->session_id;
-            if (!$sessionId) {
-                throw new Exception('No session ID provided');
+            if (!$sessionId || !preg_match('/^cs_/', $sessionId)) {
+                throw new Exception('Invalid session ID');
             }
 
             $session = $stripe->retrieveSession($sessionId);
 
-            if ($session['payment_status'] === 'paid') {
+            if ($session['payment_status'] === 'paid'
+                && isset($session['metadata']['track_id'])
+                && $session['metadata']['track_id'] === $order->track_id) {
                 $orderService = new OrderService();
                 $orderService->completeOrder($order, 'stripe', $session['id']);
             } else {

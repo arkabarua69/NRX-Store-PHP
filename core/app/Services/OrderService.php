@@ -117,7 +117,7 @@ class OrderService
                 $redirect = ($order->product->isVoucher()) ? route('user.codes') : route('user.orders');
                 return redirect($redirect)->with('success', __('Order Successful.'));
             } catch (\Exception $exception) {
-                return back()->with('error', $exception->getMessage());
+                return back()->with('error', __('Payment processing failed.'));
             }
         }
 
@@ -168,7 +168,7 @@ class OrderService
                 $redirect = ($order->product->isVoucher()) ? route('user.codes') : route('user.orders');
                 return redirect($redirect)->with('success', __('Order Successful.'));
             } catch (\Exception $exception) {
-                return back()->with('error', $exception->getMessage());
+                return back()->with('error', __('Payment processing failed.'));
             }
         }
 
@@ -204,7 +204,7 @@ class OrderService
             $getwayObj = $this->resolveGateway($gateway);
             $data = $getwayObj::orderIpn($request, $order, $gateway);
         } catch (\Exception $exception) {
-            return redirect()->route('user.account')->with('error', $exception->getMessage());
+            return redirect()->route('user.account')->with('error', __('Payment verification failed.'));
         }
 
         if (isset($data['redirect'])) {
@@ -216,11 +216,6 @@ class OrderService
 
     public function completeOrder(Order $order, string $paymentMethod, string $transactionId, ?Voucher $vouchers = null)
     {
-        $exists = Transaction::where('transaction_id', $transactionId)->exists();
-        if ($exists) {
-            throw new \Exception(__('Transaction ID already exists.'));
-        }
-
         $variation = Variation::where('stock', '>', 0)->with(['product', 'vouchers' => function ($query) {
             $query->where('status', Status::AVAILABLE);
         }])->find($order->variation_id);
@@ -249,6 +244,10 @@ class OrderService
         }
 
         DB::transaction(function () use ($order, $paymentMethod, $transactionId, $vouchers) {
+            $exists = Transaction::where('transaction_id', $transactionId)->exists();
+            if ($exists) {
+                throw new \Exception(__('Transaction ID already exists.'));
+            }
             if ($order->isPending()) {
                 $newStatus = ($order->product->isVoucher()) ? Status::COMPLETED : Status::PROCESSING;
                 $order['status'] = $newStatus;
@@ -346,10 +345,6 @@ class OrderService
 
     public function completeOrderWithWallet(Order $order, string $paymentMethod, ?Voucher $vouchers = null)
     {
-        if ($order->amount > auth()->user()->balance) {
-            throw new \Exception(__('Insufficient Balance.'));
-        }
-
         $variation = Variation::where('stock', '>', 0)->with(['product', 'vouchers' => function ($query) {
             $query->where('status', Status::AVAILABLE);
         }])->find($order->variation_id);
@@ -371,13 +366,16 @@ class OrderService
         }
 
         DB::transaction(function () use ($order, $vouchers, $paymentMethod) {
+            $user = User::where('id', $order->user_id)->lockForUpdate()->first();
+            if ($order->amount > $user->balance) {
+                throw new \Exception(__('Insufficient Balance.'));
+            }
             if ($order->isPending()) {
                 // Update Order status
                 $order['status'] = ($order->product->isVoucher()) ? Status::COMPLETED : Status::PROCESSING;
                 $order->update();
 
-                // Deduct wallet balance with lock
-                $user = User::where('id', $order->user_id)->lockForUpdate()->first();
+                // Deduct wallet balance
                 $user->balance -= $order->amount;
                 $user->save();
 
@@ -489,7 +487,7 @@ class OrderService
     public static function cancelOrder(Order $order)
     {
         DB::transaction(function () use ($order) {
-            $user = $order->user;
+            $user = User::where('id', $order->user_id)->lockForUpdate()->first();
             $refundAmount = $order->amount;
 
             if ($user->isReseller()) {
@@ -501,29 +499,33 @@ class OrderService
             $user->save();
 
             if ($order->product->isVoucher() && $order->voucher_code) {
-                $voucher = Voucher::where('order_id', $order->id)->first();
-                if ($voucher) {
+                $vouchers = Voucher::where('order_id', $order->id)->get();
+                foreach ($vouchers as $voucher) {
                     $voucher->status = Status::AVAILABLE;
                     $voucher->order_id = null;
                     $voucher->transaction_id = null;
                     $voucher->save();
+                }
 
+                if ($vouchers->count() > 0) {
                     $variation = $order->variation;
-                    $variation->stock += 1;
+                    $variation->stock += $vouchers->count();
                     $variation->save();
                 }
             }
 
             if ($order->status === OrderStatus::PROCESSING || $order->status === OrderStatus::AUTOPROCESSING) {
-                $autoVoucher = AutoVoucher::where('order_id', $order->id)->first();
-                if ($autoVoucher) {
+                $autoVouchers = AutoVoucher::where('order_id', $order->id)->get();
+                foreach ($autoVouchers as $autoVoucher) {
                     $autoVoucher->status = Status::AVAILABLE;
                     $autoVoucher->order_id = null;
                     $autoVoucher->transaction_id = null;
                     $autoVoucher->save();
+                }
 
+                if ($autoVouchers->count() > 0) {
                     $variation = $order->variation;
-                    $variation->stock += 1;
+                    $variation->stock += $autoVouchers->count();
                     $variation->save();
                 }
             }

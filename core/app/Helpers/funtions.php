@@ -62,7 +62,8 @@ if (!function_exists('setEnvValue')) {
         $contents = File::get($envFilePath);
 
         $newValue = is_string($value) ? '"' . addslashes($value) . '"' : $value;
-        $pattern = "/^{$key}=.*/m";
+        $quotedKey = preg_quote($key, '/');
+        $pattern = "/^{$quotedKey}=.*/m";
 
         if (preg_match($pattern, $contents)) {
             $contents = preg_replace($pattern, "{$key}={$newValue}", $contents);
@@ -82,7 +83,8 @@ if (!function_exists('setEnvValues')) {
 
         foreach ($keyValuePairs as $key => $value) {
             $newValue = is_string($value) ? '"' . addslashes($value) . '"' : $value;
-            $pattern = "/^{$key}=.*/m";
+            $quotedKey = preg_quote($key, '/');
+            $pattern = "/^{$quotedKey}=.*/m";
 
             if (preg_match($pattern, $contents)) {
                 $contents = preg_replace($pattern, "{$key}={$newValue}", $contents);

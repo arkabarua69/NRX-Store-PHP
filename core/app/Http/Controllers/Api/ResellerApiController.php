@@ -9,6 +9,7 @@ use App\Models\Variation;
 use App\Services\OrderService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class ResellerApiController
@@ -70,10 +71,6 @@ class ResellerApiController
         $quantity = $request->input('quantity', 1);
         $amount = $variation->price * $quantity;
 
-        if ($user->balance < $amount) {
-            return response()->json(['status' => 'error', 'message' => 'Insufficient balance.'], 400);
-        }
-
         try {
             $order = DB::transaction(function () use ($user, $variation, $quantity, $amount, $request) {
                 $profit = 0.00;
@@ -113,7 +110,8 @@ class ResellerApiController
                 ],
             ]);
         } catch (\Exception $e) {
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+            Log::error('Reseller order failed', ['error' => $e->getMessage(), 'user_id' => $user->id]);
+            return response()->json(['status' => 'error', 'message' => __('An error occurred processing your order.')], 500);
         }
     }
 
@@ -153,7 +151,7 @@ class ResellerApiController
         $orders = Order::with(['product', 'variation'])
             ->where('user_id', $request->user()->id)
             ->latest()
-            ->paginate($request->input('per_page', 20));
+            ->paginate(min((int) $request->input('per_page', 20), 100));
 
         return response()->json([
             'status' => 'success',

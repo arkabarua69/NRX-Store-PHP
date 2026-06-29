@@ -4,10 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Constants\OrderStatus;
 use App\Constants\Status;
+use App\Constants\TopupProvider;
 use App\Models\AutoVoucher;
 use App\Models\Order;
-use App\Models\Transaction;
-use App\Models\User;
 use App\Mail\OrderStatusChanged;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +17,20 @@ class TopupWebhookController
 {
     public function handle(Request $request)
     {
+        $webhookSecret = $this->resolveWebhookSecret();
+        $signature = $request->header('X-Webhook-Signature');
+
+        if (!$webhookSecret || !$signature) {
+            Log::warning('Webhook: Missing webhook secret or signature');
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $expectedSignature = hash_hmac('sha256', $request->getContent(), $webhookSecret);
+        if (!hash_equals($expectedSignature, $signature)) {
+            Log::warning('Webhook: Invalid signature');
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
         Log::info('Auto-topup webhook received', $request->all());
 
         $validated = $request->validate([
@@ -68,5 +81,17 @@ class TopupWebhookController
         }
 
         return response()->json(['status' => 'ok']);
+    }
+
+    private function resolveWebhookSecret(): ?string
+    {
+        $settings = gs();
+        $provider = $settings->topup_provider ?? null;
+
+        return match ($provider) {
+            TopupProvider::FREEFIRE => $settings->free_fire_server_api_key ?? null,
+            TopupProvider::UNIPIN => $settings->unipin_secret_key ?? null,
+            default => $settings->free_fire_server_api_key ?? null,
+        };
     }
 }

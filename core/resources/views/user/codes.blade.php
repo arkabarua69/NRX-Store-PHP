@@ -44,7 +44,7 @@
                   <span class="font-bold">{{ __('Your Code') }}: </span>
                 </p>
                 <div>
-                  <div style="background: rgb(241, 236, 247); margin: 0px 12px; padding: 5px 4px; border-radius: 5px; white-space: pre-line; text-align: left;">{!! implode(' <br>', explode(',', $order->voucher_code)) !!} </div>
+                  <div style="background: rgb(241, 236, 247); margin: 0px 12px; padding: 5px 4px; border-radius: 5px; white-space: pre-line; text-align: left;">{{ implode(' <br>', explode(',', $order->voucher_code)) }} </div>
                   <span data-text="{{ $order->voucher_code }}" id="copy">
                     <button class="align-middle text-center px-2 py-1 text-sm font-thin inline-block rounded w-38 flex items-center text-center ml-3 mt-2 code-btn copy-icon">
                       <div class="w-38 rounded h-full flex items-center icon">

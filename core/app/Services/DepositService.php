@@ -43,7 +43,7 @@ class DepositService
             $data = $getwayObj::prepareDepositData($deposit, $gateway);
             $data = (object) $data;
         } catch (\Exception $exception) {
-            return back()->with('error', $exception->getMessage());
+            return back()->with('error', __('Something went wrong.'));
         }
 
         if (isset($data->error)) {
@@ -59,7 +59,9 @@ class DepositService
 
     public function payNow($depositId)
     {
-        $deposit = Deposit::where('id', $depositId)->orderBy('id', 'DESC')->with(['user'])->first();
+        $deposit = Deposit::where('id', $depositId)
+            ->where('user_id', user_id())
+            ->orderBy('id', 'DESC')->with(['user'])->first();
 
         try {
             $gateway = request('gateway', 'uddoktapay');
@@ -67,7 +69,7 @@ class DepositService
             $data = $getwayObj::prepareDepositData($deposit, $gateway);
             $data = (object) $data;
         } catch (\Exception $exception) {
-            return back()->with('error', $exception->getMessage());
+            return back()->with('error', __('Something went wrong.'));
         }
 
         if (isset($data->error)) {
@@ -105,12 +107,11 @@ class DepositService
 
     public function completeDeposit(Deposit $deposit, string $paymentMethod, string $transactionId)
     {
-        $exists = Transaction::where('transaction_id', $transactionId)->exists();
-        if ($exists) {
-            throw new \Exception(__('Transaction ID already exists.'));
-        }
-
         DB::transaction(function () use ($deposit, $paymentMethod, $transactionId) {
+            $exists = Transaction::where('transaction_id', $transactionId)->exists();
+            if ($exists) {
+                throw new \Exception(__('Transaction ID already exists.'));
+            }
             if ($deposit->status == Status::UNPAID) {
                 // Update Deposit
                 $deposit['status'] = Status::PAID;
