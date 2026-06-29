@@ -51,7 +51,7 @@ if (!function_exists('get_image')) {
     function get_image($path)
     {
         if (empty($path)) return '';
-        return route('media.file', ['p' => basename($path)]);
+        return route('media.file', ['p' => $path]);
     }
 }
 
