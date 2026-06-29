@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\File;
 if (!function_exists('user_id')) {
     function user_id()
     {
-        return auth()->user()->id;
+        return auth()->user()?->id;
     }
 }
 
@@ -39,7 +39,11 @@ if (!function_exists('price')) {
 if (!function_exists('gs')) {
     function gs()
     {
-        return new GeneralSettings();
+        static $settings = null;
+        if ($settings === null) {
+            $settings = new GeneralSettings();
+        }
+        return $settings;
     }
 }
 
@@ -104,7 +108,7 @@ if (!function_exists('strRandom')) {
         $charactersLength = strlen($characters);
         $randomString = '';
         for ($i = 0; $i < $length; $i++) {
-            $randomString .= $characters[rand(0, $charactersLength - 1)];
+            $randomString .= $characters[random_int(0, $charactersLength - 1)];
         }
         return $randomString;
     }
@@ -149,6 +153,9 @@ if (!function_exists('jsonToPlainText')) {
     function jsonToPlainText($jsonData)
     {
         $data = json_decode($jsonData, true);
+        if (!is_array($data)) {
+            return '';
+        }
         $result = '';
 
         foreach ($data as $key => $value) {

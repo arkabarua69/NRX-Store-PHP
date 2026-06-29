@@ -36,7 +36,7 @@ return [
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URL', env('APP_URL') . '/callback/google'),
         'guzzle' => [
-            'verify' => false,
+            'verify' => true,
         ],
     ],
 

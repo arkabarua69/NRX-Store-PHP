@@ -27,7 +27,10 @@
                         </div>
                     </div>
                     <div class="text-center" style="margin-bottom:10px;"><a
-                            href="{{ route('logout') }}">{{ __('Sign Out') }}</a></div>
+                            href="#" onclick="event.preventDefault(); document.getElementById('logout-verify-form').submit();">{{ __('Sign Out') }}</a></div>
+                </form>
+                <form id="logout-verify-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+                    @csrf
                 </form>
             </div>
         </div>

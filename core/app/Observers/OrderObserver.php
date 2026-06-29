@@ -40,7 +40,7 @@ class OrderObserver
                     'processing' => 'Your order is now being processed.',
                     'cancelled' => 'Your order has been cancelled.',
                 ];
-                $message = $statusMessages[$new->value] ?? "Order status updated to {$new->value}";
+                $message = $statusMessages[$new] ?? "Order status updated to {$new}";
                 $beams->sendOrderNotification(
                     "Order #{$order->id}",
                     $message,

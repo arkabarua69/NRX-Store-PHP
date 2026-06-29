@@ -38,7 +38,7 @@
           <h2 class="text-lg primary-font-color-text font-normal fb-normal">{{ __('Total Spent') }}</h2>
         </div>
         <div class="bg-white statics">
-          <h2 class="text-lg font-normal fb-normall statics-heading">5433</h2>
+          <h2 class="text-lg font-normal fb-normall statics-heading">{{ user_id() }}</h2>
           <h2 class="text-lg primary-font-color-text font-normal fb-normal">{{ __('Support PIN') }}</h2>
         </div>
       </div>

@@ -11,17 +11,23 @@ class LogVisitor
 {
     public function handle($request, Closure $next)
     {
-        $ipAddress = $request->ip();
-        $today = today()->toDateString();
-        $cacheKey = "visitor:$ipAddress:$today";
+        try {
+            $ipAddress = $request->ip();
+            if ($ipAddress) {
+                $today = today()->toDateString();
+                $cacheKey = "visitor:$ipAddress:$today";
 
-        if (!Cache::has($cacheKey)) {
-            DB::table('visitors')->updateOrInsert(
-                ['ip_address' => $ipAddress, 'visited_at' => $today],
-                ['ip_address' => $ipAddress, 'visited_at' => $today]
-            );
+                if (!Cache::has($cacheKey)) {
+                    DB::table('visitors')->updateOrInsert(
+                        ['ip_address' => $ipAddress, 'visited_at' => $today],
+                        ['ip_address' => $ipAddress, 'visited_at' => $today]
+                    );
 
-            Cache::put($cacheKey, true, now()->endOfDay());
+                    Cache::put($cacheKey, true, now()->endOfDay());
+                }
+            }
+        } catch (\Exception $e) {
+            // Visitor logging should not break the application
         }
 
         return $next($request);

@@ -47,8 +47,13 @@ class Variation extends Model
         return $this->automatic;
     }
 
+    private const ALLOWED_PROVIDERS = ['FreeFire', 'BGMI', 'PUBG', 'cod', 'unipin'];
+
     public function providerType(Order $order)
     {
+        if (!in_array($this->provider, self::ALLOWED_PROVIDERS)) {
+            throw new \Exception('Invalid top-up provider.');
+        }
         $provider = "App\\Services\\TopupProvider\\{$this->provider}";
         return new $provider($order);
     }

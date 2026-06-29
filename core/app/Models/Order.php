@@ -23,6 +23,7 @@ class Order extends Model
         'delivery_message',
         'account_info',
         'provider_data',
+        'voucher_code',
         'track_id',
         'quantity',
         'attempts',

@@ -165,7 +165,7 @@
                           </div>
                         </button>
                         <div class="w-full mx-auto text-center">
-                        <a href="{{ route('logout') }}" class="inline-block">
+                        <a href="#" class="inline-block" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                           <button type="button" class="align-middle bg-pink-500 rounded-full mx-auto text-center hover:bg-pink-400 text-center px-1 py-2 text-white text-sm font-semibold rounded-lg inline-block shadow-lg px-6 mb-2 d-block btn-primary gosizi-btn">
                             <!---->
                             <span class="flex items-center justify-center p-0">
@@ -254,7 +254,10 @@
                               </span>
                               <span class="no-underline">Support</span>
                             </span>
-                          </a>
+                      </a>
+                      <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+                          @csrf
+                      </form>
                         </div>
                       </aside>
                     </nav>
@@ -537,10 +540,10 @@
 
     <script>
         const beamsClient = new PusherPushNotifications.Client({
-            instanceId: '{{ env("PUSHER_APP_ID") }}',
+            instanceId: '{{ config("services.pusher_beams.instance_id", "") }}',
         });
         beamsClient.start()
-            .then(() => beamsClient.addDeviceInterest('hello'))
+            .then(() => beamsClient.addDeviceInterest('orders'))
             .then(() => console.log('Pusher Beams: Registered & subscribed!'))
             .catch(console.error);
     </script>

@@ -36,13 +36,13 @@ class PusherBeamsService
 
     public function sendToAll(string $title, string $body, ?array $data = null): bool
     {
-        return $this->sendToInterests(['hello'], $title, $body, $data);
+        return $this->sendToInterests(['orders'], $title, $body, $data);
     }
 
     public function sendOrderNotification(string $title, string $body, int $orderId): bool
     {
         return $this->sendToInterests(
-            ['hello'],
+            ['orders'],
             $title,
             $body,
             ['order_id' => $orderId, 'url' => "/order/{$orderId}"]

@@ -10,36 +10,6 @@ if (version_compare(PHP_VERSION, '8.1.0') < 0) {
     die("Current PHP version is " . phpversion() . "! PHP version required for running this script is PHP 8.1. Please check and upgrade your current PHP version.");
 }
 
-// Check Ioncube Loader
-// if (!function_exists('ioncube_loader_version')) {
-//     die("ionCube Loader function is missing! This script requires ionCube Loader function to run, Please check and enable the extension or Contact with hosting provider.");
-// }
-
-// Get Ioncube Version
-function GetIonCubeLoaderVersion()
-{
-	if (function_exists('ioncube_loader_version')) {
-		$version = ioncube_loader_version();
-		$a = explode('.', $version);
-		$count = count($a);
-		if ($count == 3) {
-			return $version;
-		} elseif ($count == 2) {
-			return $version . ".0";
-		} elseif ($count == 1) {
-			return $version . ".0.0";
-		}
-		$version = implode('.', array_slice($a, 0, 3));
-		return $version;
-	}
-	return 'Not Found!';
-}
-
-// Check Version
-// if (version_compare(GetIonCubeLoaderVersion(), '12.0.0') < 0) {
-//     die("Current ionCube Loader version is ". GetIonCubeLoaderVersion()  ."! minimum ionCube Loader version required for running This Script is 12.0.0. Please check and upgrade your current ionCube Loader version or Contact with hosting provider.");
-// }
-
 /*
 |--------------------------------------------------------------------------
 | Check If The Application Is Under Maintenance

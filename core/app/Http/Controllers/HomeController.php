@@ -74,6 +74,14 @@ class HomeController extends Controller
 
     public function uidcheck(Request $request)
     {
+        $validator = validator()->make($request->all(), [
+            'id' => 'required|string|max:50',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([]);
+        }
+
         $id = $request->input('id');
         $nickname = $this->getPlayerNicknameFromUid($id);
 

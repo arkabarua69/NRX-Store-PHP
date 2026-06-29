@@ -121,7 +121,7 @@
                            </select>
                         </div>
                         <div class="p-2 pb-0"><label>Enter Email/Number</label><input name="account_info[game_account]" id="game_account" type="text" placeholder="Enter Email/Number" class="form-input relative block w-full disabled:cursor-not-allowed disabled:opacity-75 focus:outline-none border-0 rounded-md placeholder-gray-400 dark:placeholder-gray-500 text-sm px-2.5 py-2.5 shadow-sm bg-transparent text-gray-900 dark:text-white ring-1 ring-inset dark:ring-black-900 focus:ring-2 focus:ring-black-900 dark:focus:ring-black-900" required></div>
-                        <div class="p-2 pb-0"><label>Password</label><input name="account_info[game_password]" id="game_password" type="text" placeholder="Enter Password" class="form-input relative block w-full disabled:cursor-not-allowed disabled:opacity-75 focus:outline-none border-0 rounded-md placeholder-gray-400 dark:placeholder-gray-500 text-sm px-2.5 py-2.5 shadow-sm bg-transparent text-gray-900 dark:text-white ring-1 ring-inset dark:ring-black-900 focus:ring-2 focus:ring-black-900 dark:focus:ring-black-900" required></div>
+                        <div class="p-2 pb-0"><label>Password</label><input name="account_info[game_password]" id="game_password" type="password" placeholder="Enter Password" class="form-input relative block w-full disabled:cursor-not-allowed disabled:opacity-75 focus:outline-none border-0 rounded-md placeholder-gray-400 dark:placeholder-gray-500 text-sm px-2.5 py-2.5 shadow-sm bg-transparent text-gray-900 dark:text-white ring-1 ring-inset dark:ring-black-900 focus:ring-2 focus:ring-black-900 dark:focus:ring-black-900" required></div>
                         <div class="p-2 pb-0"><label>Account Back Up If Have</label><input name="account_info[game_backup]" id="game_backup" type="text" placeholder="Enter Back Up Code" class="form-input relative block w-full disabled:cursor-not-allowed disabled:opacity-75 focus:outline-none border-0 rounded-md placeholder-gray-400 dark:placeholder-gray-500 text-sm px-2.5 py-2.5 shadow-sm bg-transparent text-gray-900 dark:text-white ring-1 ring-inset dark:ring-black-900 focus:ring-2 focus:ring-black-900 dark:focus:ring-black-900"></div>
                         @if (!empty($settings->backup_code_video_link))
                         <div class="w-full text-left ml-1">
@@ -240,7 +240,7 @@
                                  <a href="{{ route('user.addfunds') }}" class="align-middle bg-pink-500 hover:bg-pink-400 text-center px-4 py-2 text-white text-sm font-semibold rounded inline-block shadow-lg w-full gosizi-btn" id="add_fund" style="margin-bottom: 10px;display:none;">
                                       ADD FUND
                                   </a>
-                                 <button class="align-middle bg-pink-500 hover:bg-pink-400 text-center px-4 py-2 text-white text-sm font-semibold rounded inline-block shadow-lg w-full gosizi-btn buy_now_btn" id="buy_now" type="buy_now" disabled> {{ __('BUY NOW') }} </button>
+                                 <button class="align-middle bg-pink-500 hover:bg-pink-400 text-center px-4 py-2 text-white text-sm font-semibold rounded inline-block shadow-lg w-full gosizi-btn buy_now_btn" id="buy_now" type="submit" disabled> {{ __('BUY NOW') }} </button>
                                  @else
                                  <a href="/login">
                                  <button class="align-middle bg-pink-500 hover:bg-pink-400 text-center px-4 py-2 text-white text-sm font-semibold rounded inline-block shadow-lg w-full gosizi-btn checkout_login" type="button"> {{ __('LOG IN') }} </button>
@@ -305,11 +305,12 @@
                    _token: "{{ csrf_token() }}"
                })
                .done(function(response) {
-                   const data = JSON.parse(response);
+                   const data = typeof response === 'string' ? JSON.parse(response) : response;
                    if (data.nickname) {
+                       const escaped = $('<span>').text(data.nickname).html();
                        $('.idExist').html(
                            '<span class="heading_title"></span> <span class="text-success">' +
-                           data.nickname + '</span>').show();
+                           escaped + '</span>').show();
                    } else {
                        $('.idExist').hide();
                    }

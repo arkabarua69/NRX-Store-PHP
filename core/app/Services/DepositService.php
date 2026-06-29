@@ -11,15 +11,26 @@ use Illuminate\Support\Facades\DB;
 
 class DepositService
 {
+    private const ALLOWED_GATEWAYS = ['uddoktapay', 'stripe', 'sslcommerz', 'bkash'];
+
+    private function resolveGateway(string $gateway): GatewayInterface
+    {
+        if (!in_array($gateway, self::ALLOWED_GATEWAYS)) {
+            throw new \Exception('Invalid payment gateway.');
+        }
+        $getwayObj = 'App\\Services\\Gateway\\' . $gateway . '\\Payment';
+        $getwayObj = app($getwayObj);
+        if (!($getwayObj instanceof GatewayInterface)) {
+            throw new \Exception('The Payment gateway must implement GatewayInterface.');
+        }
+        return $getwayObj;
+    }
+
     public function addFund(Request $request)
     {
         try {
             $gateway = $request->input('gateway', 'uddoktapay');
-            $getwayObj = 'App\\Services\\Gateway\\' . $gateway . '\\Payment';
-            $getwayObj = app($getwayObj);
-            if (!($getwayObj instanceof GatewayInterface)) {
-                throw new \Exception('The Payment gateway must implement GatewayInterface.');
-            }
+            $getwayObj = $this->resolveGateway($gateway);
 
             $create = Deposit::create([
                 'user_id'  => user_id(),
@@ -52,11 +63,7 @@ class DepositService
 
         try {
             $gateway = request('gateway', 'uddoktapay');
-            $getwayObj = 'App\\Services\\Gateway\\' . $gateway . '\\Payment';
-            $getwayObj = app($getwayObj);
-            if (!($getwayObj instanceof GatewayInterface)) {
-                throw new \Exception('The Payment gateway must implement GatewayInterface.');
-            }
+            $getwayObj = $this->resolveGateway($gateway);
             $data = $getwayObj::prepareDepositData($deposit, $gateway);
             $data = (object) $data;
         } catch (\Exception $exception) {
@@ -83,11 +90,7 @@ class DepositService
                 throw new \Exception(__('Deposit ID is not found.'));
             }
 
-            $getwayObj = 'App\\Services\\Gateway\\' . $gateway . '\\Payment';
-            $getwayObj = new $getwayObj();
-            if (!($getwayObj instanceof GatewayInterface)) {
-                throw new \Exception('The Payment gateway must implement GatewayInterface.');
-            }
+            $getwayObj = $this->resolveGateway($gateway);
             $data = $getwayObj::depositIpn($request, $deposit, $gateway);
         } catch (\Exception $exception) {
             return redirect()->route('user.addfunds')->with('error', $exception->getMessage());
@@ -96,6 +99,8 @@ class DepositService
         if (isset($data['redirect'])) {
             return redirect($data['redirect'])->with($data['status'], $data['message']);
         }
+
+        return redirect()->route('user.addfunds')->with('error', __('Payment verification failed.'));
     }
 
     public function completeDeposit(Deposit $deposit, string $paymentMethod, string $transactionId)

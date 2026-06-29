@@ -27,6 +27,21 @@ use Illuminate\Support\Facades\Mail;
 
 class OrderService
 {
+    private const ALLOWED_GATEWAYS = ['uddoktapay', 'stripe', 'sslcommerz', 'bkash'];
+
+    private function resolveGateway(string $gateway): GatewayInterface
+    {
+        if (!in_array($gateway, self::ALLOWED_GATEWAYS)) {
+            throw new \Exception('Invalid payment gateway.');
+        }
+        $getwayObj = 'App\\Services\\Gateway\\' . $gateway . '\\Payment';
+        $getwayObj = app($getwayObj);
+        if (!($getwayObj instanceof GatewayInterface)) {
+            throw new \Exception('The Payment gateway must implement GatewayInterface.');
+        }
+        return $getwayObj;
+    }
+
     public function getMine(array $queryParams = [], bool $isVoucher = false)
     {
         $queryBuilder = Order::with(['variation', 'product', 'voucher'])
@@ -108,11 +123,7 @@ class OrderService
 
         try {
             $gateway = $request->input('gateway', 'uddoktapay');
-            $getwayObj = 'App\\Services\\Gateway\\' . $gateway . '\\Payment';
-            $getwayObj = app($getwayObj);
-            if (!($getwayObj instanceof GatewayInterface)) {
-                throw new Exception('The Payment gateway must implement GatewayInterface.');
-            }
+            $getwayObj = $this->resolveGateway($gateway);
             $data = $getwayObj::prepareOrderData($order, $gateway);
             $data = (object) $data;
         } catch (\Exception $exception) {
@@ -163,11 +174,7 @@ class OrderService
 
         try {
             $gateway = request('gateway', 'uddoktapay');
-            $getwayObj = 'App\\Services\\Gateway\\' . $gateway . '\\Payment';
-            $getwayObj = app($getwayObj);
-            if (!($getwayObj instanceof GatewayInterface)) {
-                throw new Exception('The Payment gateway must implement GatewayInterface.');
-            }
+            $getwayObj = $this->resolveGateway($gateway);
             $data = $getwayObj::prepareOrderData($order, $gateway);
             $data = (object) $data;
         } catch (\Exception $exception) {
@@ -194,11 +201,7 @@ class OrderService
                 throw new \Exception(__('Order not found.'));
             }
 
-            $getwayObj = 'App\\Services\\Gateway\\' . $gateway . '\\Payment';
-            $getwayObj = app($getwayObj);
-            if (!($getwayObj instanceof GatewayInterface)) {
-                throw new Exception('The Payment gateway must implement GatewayInterface.');
-            }
+            $getwayObj = $this->resolveGateway($gateway);
             $data = $getwayObj::orderIpn($request, $order, $gateway);
         } catch (\Exception $exception) {
             return redirect()->route('user.account')->with('error', $exception->getMessage());
@@ -207,6 +210,8 @@ class OrderService
         if (isset($data['redirect'])) {
             return redirect($data['redirect'])->with($data['status'], $data['message']);
         }
+
+        return redirect()->route('user.orders')->with('error', __('Payment verification failed.'));
     }
 
     public function completeOrder(Order $order, string $paymentMethod, string $transactionId, ?Voucher $vouchers = null)
@@ -371,8 +376,8 @@ class OrderService
                 $order['status'] = ($order->product->isVoucher()) ? Status::COMPLETED : Status::PROCESSING;
                 $order->update();
 
-                // Deduct wallet balance
-                $user = $order->user;
+                // Deduct wallet balance with lock
+                $user = User::where('id', $order->user_id)->lockForUpdate()->first();
                 $user->balance -= $order->amount;
                 $user->save();
 

@@ -49,6 +49,14 @@ class DepositController extends Controller
             return back()->with('error', __('Deposit ID field is required.'));
         }
 
+        $deposit = Deposit::where('id', $request->id)
+            ->where('user_id', user_id())
+            ->first();
+
+        if (!$deposit) {
+            return back()->with('error', __('Deposit not found.'));
+        }
+
         return $depositService->payNow($request->id);
     }
 }

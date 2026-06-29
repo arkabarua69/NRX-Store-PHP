@@ -98,5 +98,10 @@ class AppServiceProvider extends ServiceProvider
                 @File::makeDirectory($dir, 0775, true, true);
             }
         }
+
+        $installedFile = storage_path('installed');
+        if (!File::exists($installedFile)) {
+            @File::put($installedFile, 'installed');
+        }
     }
 }

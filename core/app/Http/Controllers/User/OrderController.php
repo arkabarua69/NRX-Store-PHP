@@ -39,6 +39,14 @@ class OrderController extends Controller
             return back()->with('error', __('Order ID field is required.'));
         }
 
+        $order = \App\Models\Order::where('id', $request->id)
+            ->where('user_id', user_id())
+            ->first();
+
+        if (!$order) {
+            return back()->with('error', __('Order not found.'));
+        }
+
         return $orderService->payNow($request->id);
     }
 }

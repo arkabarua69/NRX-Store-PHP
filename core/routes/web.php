@@ -11,25 +11,6 @@ use App\Http\Controllers\User\DepositController;
 use App\Http\Controllers\User\TransactionController;
 use App\Http\Controllers\PWAController;
 
-Route::get('/clear', function () {
-    $output = new \Symfony\Component\Console\Output\BufferedOutput();
-    Artisan::call('optimize:clear', array(), $output);
-    return $output->fetch();
-})->name('/clear');
-
-Route::get('queue-work', function () {
-    return Illuminate\Support\Facades\Artisan::call('schedule:run');
-})->name('queue.work');
-
-Route::get('schedule-run', function () {
-    return Illuminate\Support\Facades\Artisan::call('schedule:run');
-})->name('cron');
-
-Route::get('migrate', function () {
-    return Illuminate\Support\Facades\Artisan::call('migrate');
-});
-
-
 Route::get('/manifest.json', [PWAController::class, 'manifestJson'])->name('manifest');
 Route::get('/offline.html', [PWAController::class, 'offline']);
 
@@ -67,6 +48,6 @@ Route::group(['middleware' => ['auth', 'throttle:60,1'], 'as' => 'user.'], funct
     Route::match(['get', 'post'], '/code/cancel', [PaymentController::class, 'codeCancel'])->name('code.cancel');
 });
 
-Route::post('/addons/uidcheck', [HomeController::class, 'uidcheck'])->name('LaravelAddons::uidcheck');
+Route::post('/addons/uidcheck', [HomeController::class, 'uidcheck'])->middleware('throttle:10,1')->name('LaravelAddons::uidcheck');
 
 require __DIR__ . '/auth.php';
