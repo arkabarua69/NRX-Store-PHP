@@ -1,0 +1,19 @@
+[package]
+name = "nrx-store"
+version = "1.0.0"
+description = "NRX Store - Digital Game Top-Up Platform"
+authors = ["arkabarua69"]
+license = "MIT"
+repository = "https://github.com/arkabarua69/NRX-Store-PHP"
+
+[build]
+command = "cd core && composer install --no-dev --optimize-autoloader && npm install && npm run build"
+
+[deploy]
+memory = 512
+cpu = 1
+
+[[command]]
+name = "php-server"
+module = "php/php"
+args = ["-S", "0.0.0.0:8080", "router.php"]
