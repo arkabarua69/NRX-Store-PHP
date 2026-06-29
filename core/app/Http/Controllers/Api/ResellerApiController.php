@@ -94,9 +94,6 @@ class ResellerApiController
 
                 $order = Order::create($orderData);
 
-                $user->balance -= $amount;
-                $user->save();
-
                 return $order;
             });
 

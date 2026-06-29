@@ -98,7 +98,7 @@ if (!function_exists('setEnvValues')) {
 if (!function_exists('strRandom')) {
     function strRandom($length = 12)
     {
-        $characters = 'ABCDEFGHJKMNOPQRSTUVWXYZ123456789';
+        $characters = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz123456789';
         $charactersLength = strlen($characters);
         $randomString = '';
         for ($i = 0; $i < $length; $i++) {

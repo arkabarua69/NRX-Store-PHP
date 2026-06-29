@@ -45,7 +45,7 @@ class GoogleController extends Controller
                 return redirect(route('home'));
             }
         } catch (Exception $e) {
-            return redirect(route('login'))->with('error', 'Google login failed: ' . $e->getMessage());
+            return redirect(route('login'))->with('error', __('Google login failed. Please try again.'));
         }
     }
 }

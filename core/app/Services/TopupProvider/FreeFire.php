@@ -90,7 +90,7 @@ class FreeFire extends TopupProviderService
             }
         } catch (Exception $e) {
             $this->order->provider_data = [
-                'message' => $response->json('message'),
+                'message' => $e->getMessage(),
             ];
             $this->order->voucher_code = null;
             $this->order->status = OrderStatus::PROCESSING;
