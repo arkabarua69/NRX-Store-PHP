@@ -326,32 +326,10 @@ class Settings extends SettingsPage
             ]);
     }
 
-    protected function beforeSave(): void
-    {
-        $data = $this->form->getState();
-        setEnvValues([
-            'APP_NAME'             => $data['site_name'],
-            'GOOGLE_CLIENT_ID'     => $data['google_client_id'],
-            'GOOGLE_CLIENT_SECRET' => $data['google_client_secret'],
-            'MAIL_FROM_ADDRESS'    => $data['smtp_from_address'],
-            'MAIL_HOST'            => $data['smtp_host'],
-            'MAIL_PORT'            => $data['smtp_port'],
-            'MAIL_USERNAME'        => $data['smtp_username'],
-            'MAIL_PASSWORD'        => $data['smtp_password'],
-        ]);
-    }
-
     protected function afterSave(): void
     {
         try {
-            if (config('app.url') !== request()->root()) {
-                setEnvValue('APP_URL', request()->root());
-            }
-        } catch (\Exception $e) {
-        }
-
-        try {
-            $output = Artisan::call('config:clear');
+            Artisan::call('config:clear');
         } catch (\Exception $e) {
         }
     }
