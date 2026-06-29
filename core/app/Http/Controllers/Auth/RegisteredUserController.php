@@ -54,7 +54,6 @@ class RegisteredUserController extends Controller
         } catch (TransportException $e) {
             Log::error('Registration verification email failed: ' . $e->getMessage(), [
                 'user_id' => $user->id,
-                'email' => $user->email,
             ]);
         }
 

@@ -39,9 +39,7 @@ class PasswordResetLinkController extends Controller
                 $request->only('email')
             );
         } catch (TransportException $e) {
-            Log::error('Password reset email transport failed: ' . $e->getMessage(), [
-                'email' => $request->input('email'),
-            ]);
+            Log::error('Password reset email transport failed: ' . $e->getMessage());
             $status = __('SMTP Connection Error.');
         }
         
