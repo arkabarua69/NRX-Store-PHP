@@ -19,7 +19,7 @@
 
     $(document).on('click', '.order_note', function() {
         if ($(this).data('note') !== "") {
-            $("#show_note").html($(this).data('note').replace(/&lt;br&gt;/g, '<br>'));
+            $("#show_note").text($(this).data('note'));
         } else {
             $("#show_note").text('No note found to show.');
         }

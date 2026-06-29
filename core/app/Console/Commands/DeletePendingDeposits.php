@@ -4,37 +4,21 @@ namespace App\Console\Commands;
 
 use App\Constants\Status;
 use App\Models\Deposit;
-use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Builder;
 
-class DeletePendingDeposits extends Command
+class DeletePendingDeposits extends DeletePendingRecords
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
     protected $signature = 'deposits:delete-pending';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
     protected $description = 'Delete pending deposits older than 72 hours';
 
-    /**
-     * Execute the console command.
-     */
-    public function handle()
+    protected function getQuery(): Builder
     {
-        $cutoffTime = now()->subHours(72);
+        return Deposit::where('status', Status::UNPAID);
+    }
 
-        $deletedDeposits = Deposit::where('status', Status::UNPAID)
-            ->where('created_at', '<', $cutoffTime)
-            ->delete();
-
-        $this->info("Deleted $deletedDeposits pending deposits.");
-
-        return 0;
+    protected function getRecordLabel(): string
+    {
+        return 'deposits';
     }
 }

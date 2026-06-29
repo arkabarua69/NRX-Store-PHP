@@ -31,7 +31,7 @@
         <li class="carousel__slide">
           <div class="carousel__item">
                         @isset($slider->url)
-             <a href="{{ $slider->url }}" target="_blank">
+             <a href="{{ $slider->url }}" target="_blank" rel="noopener noreferrer">
               <img src="{{ $slider->image_url }}" class="rounded-md">
             </a>
                         @else

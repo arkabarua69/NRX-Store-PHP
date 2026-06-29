@@ -14,7 +14,7 @@
                     </div>
                 </div>
                 <div class="body">
-                    {!! $page->content !!}
+                    {{ $page->content }}
                 </div>
             </div>
         </div>
