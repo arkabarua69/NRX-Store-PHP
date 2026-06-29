@@ -38,7 +38,7 @@ return [
 
         'public' => [
             'driver' => 'local',
-            'root' => public_path('uploads'),
+            'root' => base_path('../uploads'),
             'url' => config('app.url').'/uploads',
             'visibility' => 'public',
             'throw' => false,
@@ -46,7 +46,7 @@ return [
 
         'media' => [
             'driver' => 'local',
-            'root' => public_path('uploads/media'),
+            'root' => base_path('../uploads/media'),
             'url' => config('app.url').'/uploads/media',
             'visibility' => 'public',
             'throw' => false,
