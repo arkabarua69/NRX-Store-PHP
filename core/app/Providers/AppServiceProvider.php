@@ -83,19 +83,19 @@ class AppServiceProvider extends ServiceProvider
     {
         $dirs = [
             storage_path('app/livewire-tmp'),
-            storage_path('app/public/uploads'),
-            storage_path('app/public/settings'),
-            storage_path('app/public/media'),
             storage_path('framework/cache/data'),
             storage_path('framework/sessions'),
             storage_path('framework/views'),
             storage_path('logs'),
             base_path('bootstrap/cache'),
+            public_path('uploads'),
+            public_path('uploads/settings'),
+            public_path('uploads/media'),
         ];
 
         foreach ($dirs as $dir) {
             if (!File::isDirectory($dir)) {
-                File::makeDirectory($dir, 0775, true, true);
+                @File::makeDirectory($dir, 0775, true, true);
             }
         }
     }
