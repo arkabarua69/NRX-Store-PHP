@@ -20,6 +20,10 @@ class MediaController extends Controller
     {
         $path = $request->query('p');
         if (!$path) abort(404);
+        $path = basename($path);
+        if (str_contains($path, '..') || str_contains($path, '/') || str_contains($path, '\\')) {
+            abort(404);
+        }
         $fullPath = base_path('../uploads/' . $path);
         if (!file_exists($fullPath)) abort(404);
         return response()->file($fullPath);

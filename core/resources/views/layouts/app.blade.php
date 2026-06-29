@@ -118,7 +118,7 @@
                       <div class="relative">
                         <div class="flex items-center cursor-pointer px-2 duration-75">
                           <div class="mr-2"></div>
-                          <img src="https://ui-avatars.com/api/?name={{ strtoupper(substr(auth()->user()->name, 0, 1)) }}&size=96&background=f29f2c" class="mr-1">
+                          <img src="https://ui-avatars.com/api/?name={{ urlencode(strtoupper(substr(auth()->user()->name, 0, 1))) }}&size=96&background=f29f2c" class="mr-1">
                           <p class="_body2 text-gray-500 capitalize select-none user-child name_user">{{ Str::limit(auth()->user()->name, 12) }}</p>
                           <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" height="1.5em" width="1.5em" xmlns="http://www.w3.org/2000/svg" class="text-gray-500 duration-150 user-child">
                             <path d="M16.293 9.293 12 13.586 7.707 9.293l-1.414 1.414L12 16.414l5.707-5.707z"></path>
@@ -152,7 +152,7 @@
                       </div>
                       <aside class="transform top-0 right-0 w-64 bg-white fixed h-full overflow-auto ease-in-out transition-all duration-300 z-30 translate-x-0">
                         <button id="userButton" class="flex items-center focus:outline-none p-3">
-                          <img src="https://ui-avatars.com/api/?name={{ strtoupper(substr(auth()->user()->name, 0, 1)) }}&size=96&background=f29f2c" backgroundcolor="#D81C4B" color="#fff" style="height: 50px;">
+                          <img src="https://ui-avatars.com/api/?name={{ urlencode(strtoupper(substr(auth()->user()->name, 0, 1))) }}&size=96&background=f29f2c" backgroundcolor="#D81C4B" color="#fff" style="height: 50px;">
 
                           <div>
                             <div class="text-left w-full">
@@ -434,7 +434,7 @@
                     <div class="sticky-footer-item">
                         <a href="{{ $menu->link }}">
                             <div class="d-flex justify-content-center align-items-center flex-column">
-                                <span>{!! $menu->icon !!}</span>
+                                <span>{{ $menu->icon }}</span>
                                 <span>{{ $menu->name }}</span>
                             </div>
                         </a>
@@ -445,7 +445,7 @@
                     <div class="sticky-footer-item">
                         <a href="{{ $menu->link }}">
                             <div class="d-flex justify-content-center align-items-center flex-column">
-                                <span>{!! $menu->icon !!}</span>
+                                <span>{{ $menu->icon }}</span>
                                 <span>{{ $menu->name }}</span>
                             </div>
                         </a>
@@ -456,7 +456,7 @@
                     <div class="sticky-footer-item">
                         <a href="{{ $menu->link }}">
                             <div class="d-flex justify-content-center align-items-center flex-column">
-                                <span>{!! $menu->icon !!}</span>
+                                <span>{{ $menu->icon }}</span>
                                 <span>{{ $menu->name }}</span>
                             </div>
                         </a>

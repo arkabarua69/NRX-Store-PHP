@@ -70,10 +70,6 @@ class ResellerApiController
         $quantity = $request->input('quantity', 1);
         $amount = $variation->price * $quantity;
 
-        if ($user->balance < $amount) {
-            return response()->json(['status' => 'error', 'message' => 'Insufficient balance.'], 400);
-        }
-
         try {
             $order = DB::transaction(function () use ($user, $variation, $quantity, $amount, $request) {
                 $profit = 0.00;
@@ -94,9 +90,6 @@ class ResellerApiController
 
                 $order = Order::create($orderData);
 
-                $user->balance -= $amount;
-                $user->save();
-
                 return $order;
             });
 
@@ -116,7 +109,7 @@ class ResellerApiController
                 ],
             ]);
         } catch (\Exception $e) {
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+            return response()->json(['status' => 'error', 'message' => __('An error occurred processing your order.')], 500);
         }
     }
 

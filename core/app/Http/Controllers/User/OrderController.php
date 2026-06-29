@@ -19,7 +19,7 @@ class OrderController extends Controller
         $validator = validator()->make($request->all(), [
             'variation_id' => 'required|exists:variations,id',
             'quantity' => 'sometimes|required|integer|min:1',
-            'payment_method' => 'required|string'
+            'payment_method' => 'required|string|in:wallet,uddoktapay,stripe,sslcommerz,bkash'
         ]);
 
         if ($validator->fails()) {
