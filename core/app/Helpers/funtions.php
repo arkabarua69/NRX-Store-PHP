@@ -50,7 +50,8 @@ if (!function_exists('gs')) {
 if (!function_exists('get_image')) {
     function get_image($path)
     {
-        return asset('uploads/' . $path);
+        if (empty($path)) return '';
+        return route('media.file', ['p' => $path]);
     }
 }
 

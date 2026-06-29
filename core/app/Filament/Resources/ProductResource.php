@@ -100,6 +100,7 @@ class ProductResource extends Resource
                 Section::make('Meta')
                     ->schema([
                         SpatieMediaLibraryFileUpload::make('thumbnail')
+                            ->collection('thumbnail')
                             ->disk('media')
                             ->image()
                             ->maxSize(10240)

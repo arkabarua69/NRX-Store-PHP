@@ -38,6 +38,7 @@ class SliderResource extends Resource
                             ->maxLength(255)
                             ->hintIcon('heroicon-m-question-mark-circle', tooltip: 'Leave it blank if you don\'t need linking.'),
                         SpatieMediaLibraryFileUpload::make('image')
+                            ->collection('image')
                             ->disk('media')
                             ->image()
                             ->maxSize(10240)

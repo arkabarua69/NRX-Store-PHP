@@ -10,6 +10,11 @@ use App\Http\Controllers\User\OrderController;
 use App\Http\Controllers\User\DepositController;
 use App\Http\Controllers\User\TransactionController;
 use App\Http\Controllers\PWAController;
+use App\Http\Controllers\MediaController;
+
+// Serve images through PHP route to bypass Wasmer CDN static-file blocking
+Route::get('/img/{mediaId}', [MediaController::class, 'serve'])->name('media.serve');
+Route::get('/img-file', [MediaController::class, 'file'])->name('media.file');
 
 Route::get('/manifest.json', [PWAController::class, 'manifestJson'])->name('manifest');
 Route::get('/offline.html', [PWAController::class, 'offline']);

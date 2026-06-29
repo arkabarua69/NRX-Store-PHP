@@ -30,8 +30,9 @@ class Popup extends Model implements HasMedia
 
     public function getImageUrlAttribute(): string
     {
-        return $this->hasMedia('image')
-            ? $this->getFirstMediaUrl('image')
-            : '';
+        if (!$this->hasMedia('image')) {
+            return '';
+        }
+        return route('media.serve', ['mediaId' => $this->getFirstMedia('image')->id]);
     }
 }

@@ -51,9 +51,10 @@ class Product extends Model implements HasMedia
 
     public function getImageUrlAttribute(): string
     {
-        return $this->hasMedia('thumbnail')
-        ? $this->getFirstMediaUrl('thumbnail')
-        : self::PLACEHOLDER_IMAGE_PATH;
+        if (!$this->hasMedia('thumbnail')) {
+            return self::PLACEHOLDER_IMAGE_PATH;
+        }
+        return route('media.serve', ['mediaId' => $this->getFirstMedia('thumbnail')->id]);
     }
 
     public function isVoucher(): bool

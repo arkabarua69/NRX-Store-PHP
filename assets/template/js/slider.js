@@ -1,10 +1,12 @@
-const track = document.querySelector('.carousel__track');
-const slides = Array.from(track.children);
-const nextButton = document.querySelector('.carousel__next');
-const prevButton = document.querySelector('.carousel__prev');
-const dotsNav = document.querySelector('.carousel__pagination');
-const dots = Array.from(dotsNav.children);
-const autoSlideTime= 3000;
+(function() {
+  const track = document.querySelector('.carousel__track');
+  if (!track) return;
+  const slides = Array.from(track.children);
+  const nextButton = document.querySelector('.carousel__next');
+  const prevButton = document.querySelector('.carousel__prev');
+  const dotsNav = document.querySelector('.carousel__pagination');
+  const dots = Array.from(dotsNav.children);
+  const autoSlideTime= 3000;
 
 const slideWidth = slides[0].getBoundingClientRect().width;
 
@@ -96,3 +98,4 @@ dotsNav.addEventListener('click', e => {
   updateDots(currentDot, targetDot);
   resetAutoSlide();
 });
+})();

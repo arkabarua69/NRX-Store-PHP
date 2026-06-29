@@ -48,6 +48,7 @@ class PopupResource extends Resource
                 Section::make('Meta')
                     ->schema([
                         SpatieMediaLibraryFileUpload::make('image')
+                            ->collection('image')
                             ->disk('media'),
                         Select::make('type')
                             ->options([

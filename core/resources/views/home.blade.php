@@ -79,6 +79,9 @@
     @endif
           <!--- /slider --->
 
+    @if (count($sliders) > 0)
+    <script src="{{ asset('assets/template/js/slider.js') }}?1879"></script>
+    @endif
 
  <!--- products --->
           <section class="my-2" id="topup">
@@ -116,7 +119,6 @@
               </div>
            </section>
 
-    <script src="{{ asset('assets/template/js/slider.js') }}?1879"></script>
     
 </div>
 </div>
