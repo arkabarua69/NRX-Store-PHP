@@ -6,8 +6,6 @@ use App\Constants\OrderStatus;
 use App\Constants\Status;
 use App\Models\AutoVoucher;
 use App\Models\Order;
-use App\Models\Transaction;
-use App\Models\User;
 use App\Mail\OrderStatusChanged;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
