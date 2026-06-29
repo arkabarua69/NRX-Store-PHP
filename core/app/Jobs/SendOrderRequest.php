@@ -67,6 +67,7 @@ class SendOrderRequest implements ShouldQueue
         Log::error('SendOrderRequest permanently failed', [
             'order_id' => $this->order->id,
             'error' => $exception->getMessage(),
+            'exception' => $exception,
         ]);
     }
 

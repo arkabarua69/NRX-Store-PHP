@@ -50,6 +50,7 @@ class VerifyOrderStatus implements ShouldQueue
         Log::error('VerifyOrderStatus permanently failed', [
             'order_id' => $this->order->id,
             'error' => $exception->getMessage(),
+            'exception' => $exception,
         ]);
     }
 }

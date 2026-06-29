@@ -45,8 +45,9 @@ class EditOrder extends EditRecord
             Notification::make()
                 ->title('Refund failed.')
                 ->danger()
-                ->body($e->getMessage())
+                ->body('The refund could not be processed. Please try again or check the logs.')
                 ->send();
+            $this->halt();
         }
     }
 }

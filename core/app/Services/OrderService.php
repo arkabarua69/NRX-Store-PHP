@@ -106,7 +106,12 @@ class OrderService
                 return Order::create($orderData);
             });
         } catch (Exception $e) {
-            Log::error('Order creation failed', ['error' => $e->getMessage(), 'order_data' => $orderData]);
+            Log::error('Order creation failed', [
+                'error' => $e->getMessage(),
+                'user_id' => $orderData['user_id'] ?? null,
+                'product_id' => $orderData['product_id'] ?? null,
+                'variation_id' => $orderData['variation_id'] ?? null,
+            ]);
             return back()->with('error', __('Something went wrong.'));
         }
 
