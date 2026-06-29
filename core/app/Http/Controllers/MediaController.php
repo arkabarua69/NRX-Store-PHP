@@ -20,11 +20,14 @@ class MediaController extends Controller
     {
         $path = $request->query('p');
         if (!$path) abort(404);
-        if (str_contains($path, '..') || str_starts_with($path, '/') || str_starts_with($path, '\\')) {
-            abort(404);
-        }
-        $fullPath = base_path('../uploads/' . $path);
+
+        $uploadsDir = realpath(base_path('../uploads'));
+        if (!$uploadsDir) abort(404);
+
+        $fullPath = realpath($uploadsDir . '/' . $path);
+        if (!$fullPath || !str_starts_with($fullPath, $uploadsDir . DIRECTORY_SEPARATOR)) abort(404);
         if (!file_exists($fullPath)) abort(404);
+
         return response()->file($fullPath);
     }
 }

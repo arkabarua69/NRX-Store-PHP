@@ -82,7 +82,9 @@ class Settings extends SettingsPage
                                         TextInput::make('google_client_id')
                                             ->label('Google Client Id'),
                                         TextInput::make('google_client_secret')
-                                            ->label('Google Client Secret'),
+                                            ->label('Google Client Secret')
+                                            ->password()
+                                            ->revealable(),
                                         TextInput::make('google_callback')
                                             ->label('Google Callback')
                                             ->suffixAction(CopyAction::make())
@@ -129,7 +131,9 @@ class Settings extends SettingsPage
                                         TextInput::make('smtp_username')
                                             ->label('SMTP Username'),
                                         TextInput::make('smtp_password')
-                                            ->label('SMTP Password'),
+                                            ->label('SMTP Password')
+                                            ->password()
+                                            ->revealable(),
 
                                     ])->columns(2),
                             ]),
@@ -140,6 +144,8 @@ class Settings extends SettingsPage
                                     ->schema([
                                         TextInput::make('uddoktapay_api_key')
                                             ->label('UddoktaPay API Key')
+                                            ->password()
+                                            ->revealable()
                                             ->required(),
                                         TextInput::make('uddoktapay_api_url')
                                             ->label('UddoktaPay API URL')
@@ -305,12 +311,16 @@ class Settings extends SettingsPage
                                             ->hidden(fn(Get $get): bool => $get('topup_provider') !== TopupProvider::FREEFIRE),
                                         TextInput::make('free_fire_server_api_key')
                                             ->label('Free Fire API Key')
+                                            ->password()
+                                            ->revealable()
                                             ->hidden(fn(Get $get): bool => $get('topup_provider') !== TopupProvider::FREEFIRE),
                                         TextInput::make('unipin_partner_id')
                                             ->label('Unipin Partner ID')
                                             ->hidden(fn(Get $get): bool => $get('topup_provider') !== TopupProvider::UNIPIN),
                                         TextInput::make('unipin_secret_key')
                                             ->label('Unipin Secret Key')
+                                            ->password()
+                                            ->revealable()
                                             ->hidden(fn(Get $get): bool => $get('topup_provider') !== TopupProvider::UNIPIN),
                                         TextInput::make('unipin_server_url')
                                             ->label('Unipin Server URL')

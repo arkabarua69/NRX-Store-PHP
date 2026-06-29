@@ -16,6 +16,20 @@ class TopupWebhookController
 {
     public function handle(Request $request)
     {
+        $apiKey = gs()->free_fire_server_api_key;
+        $signature = $request->header('X-Webhook-Signature');
+
+        if (!$apiKey || !$signature) {
+            Log::warning('Webhook: Missing API key or signature');
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $expectedSignature = hash_hmac('sha256', $request->getContent(), $apiKey);
+        if (!hash_equals($expectedSignature, $signature)) {
+            Log::warning('Webhook: Invalid signature');
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
         Log::info('Auto-topup webhook received', $request->all());
 
         $validated = $request->validate([
