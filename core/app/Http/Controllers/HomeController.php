@@ -7,7 +7,7 @@ use App\Models\Page;
 use App\Models\Popup;
 use App\Models\Product;
 use App\Models\Slider;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -50,11 +50,12 @@ class HomeController extends Controller
         return view('topup.checkout', compact('product'));
     }
 
-    public function getPopups(Collection $collection, Request $request)
+    public function getPopups(Request $request)
     {
-        $popupQuery = Popup::query();
+        $collection = new Collection();
+
         if (!$request->session()->has('first_visit_popup')) {
-            $firstVisitPopups = $popupQuery->where('type', Status::ONCE)
+            $firstVisitPopups = Popup::where('type', Status::ONCE)
                 ->where('status', Status::ACTIVE)
                 ->get();
             $collection = $collection->merge($firstVisitPopups);
@@ -62,7 +63,7 @@ class HomeController extends Controller
         }
 
         if (!$request->cookie('daily_popup_showed')) {
-            $dailyOncePopups = $popupQuery->where('type', Status::DAILY)
+            $dailyOncePopups = Popup::where('type', Status::DAILY)
                 ->where('status', Status::ACTIVE)
                 ->get();
             $collection = $collection->merge($dailyOncePopups);

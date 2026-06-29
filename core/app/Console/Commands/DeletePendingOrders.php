@@ -31,6 +31,7 @@ class DeletePendingOrders extends Command
 
         $deletedOrders = Order::where('status', Status::PENDING)
             ->where('created_at', '<', $cutoffTime)
+            ->whereDoesntHave('transactions')
             ->delete();
 
         $this->info("Deleted $deletedOrders pending orders.");

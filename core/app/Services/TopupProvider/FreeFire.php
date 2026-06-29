@@ -68,7 +68,10 @@ class FreeFire extends TopupProviderService
         try {
             $track_id = $this->order->provider_data['track_id'];
             $url = $this->baseUrl . "/transactions/{$track_id}";
-            $response = Http::get($url);
+            $response = Http::withHeaders([
+                'RA-SECRET-KEY' => $this->apiKey,
+                'Accept'        => 'application/json',
+            ])->get($url);
 
             if ($response->successful() && $response->json('status') === 'success') {
                 $this->order->provider_data = [

@@ -97,12 +97,14 @@ class OrderService
             return redirect()->route('user.order.pay', ['id' => $pendingOrder->id]);
         }
 
-        $amount_cal = $variation->price * $request->input('quantity', 1);
+        $quantity = $request->input('quantity', 1);
+        $amount_cal = $variation->price * $quantity;
         $variation_buy_rate = $variation->buy_rate;
         $profit_cal = 0.00;
 
-        if ($amount_cal > $variation_buy_rate) {
-            $profit_cal = $amount_cal - $variation_buy_rate;
+        $total_buy_rate = $variation_buy_rate * $quantity;
+        if ($amount_cal > $total_buy_rate) {
+            $profit_cal = $amount_cal - $total_buy_rate;
             $profit_cal = number_format($profit_cal, 2, '.', '');
         }
 
@@ -110,7 +112,7 @@ class OrderService
             'user_id'      => user_id(),
             'product_id'   => $variation->product->id,
             'variation_id' => $variation->id,
-            'quantity'     => $request->input('quantity', 1),
+            'quantity'     => $quantity,
             'amount'       => $amount_cal,
             'profit'       => $profit_cal,
             'track_id'     => strRandom(),
@@ -141,7 +143,7 @@ class OrderService
         }
 
         try {
-            $gateway = $request->input('gateway', 'uddoktapay');
+            $gateway = $request->input('payment_method', 'uddoktapay');
             $getwayObj = $this->resolveGateway($gateway);
             $data = $getwayObj::prepareOrderData($order, $gateway);
             $data = (object) $data;
@@ -181,7 +183,9 @@ class OrderService
             return back()->with('error', __('Sorry, this voucher is out of stock.'));
         }
 
-        if (gs()->wallet === Status::ACTIVE && auth()->user()->balance >= $order->amount) {
+        $paymentMethod = request('payment_method', request('gateway', 'uddoktapay'));
+
+        if (gs()->wallet === Status::ACTIVE && $paymentMethod === Status::WALLET && auth()->user()->balance >= $order->amount) {
             try {
                 $this->completeOrderWithWallet($order, Status::WALLET);
                 $redirect = ($order->product->isVoucher()) ? route('user.codes') : route('user.orders');
@@ -192,7 +196,7 @@ class OrderService
         }
 
         try {
-            $gateway = request('gateway', 'uddoktapay');
+            $gateway = $paymentMethod !== Status::WALLET ? $paymentMethod : 'uddoktapay';
             $getwayObj = $this->resolveGateway($gateway);
             $data = $getwayObj::prepareOrderData($order, $gateway);
             $data = (object) $data;
@@ -305,7 +309,7 @@ class OrderService
                     $order->update();
                 } else {
                     $variation = $order->variation;
-                    $variation->stock -= 1;
+                    $variation->stock -= $order->quantity;
                     $variation->save();
                 }
 
@@ -422,7 +426,7 @@ class OrderService
                 } else {
                     // Update Variation stock
                     $variation = $order->variation;
-                    $variation->stock -= 1;
+                    $variation->stock -= $order->quantity;
                     $variation->save();
                 }
 
@@ -476,7 +480,7 @@ class OrderService
     {
         DB::transaction(function () use ($order, $paymentMethod, $transactionId) {
             // Credit wallet
-            $user = $order->user;
+            $user = User::where('id', $order->user_id)->lockForUpdate()->first();
             $user->balance += $order->amount;
             $user->save();
 
@@ -546,6 +550,11 @@ class OrderService
                     $variation = $order->variation;
                     $variation->stock += $autoVouchers->count();
                     $variation->save();
+                } elseif (!$order->product->isVoucher()) {
+                    // Restore stock for non-voucher orders without auto vouchers
+                    $variation = $order->variation;
+                    $variation->stock += $order->quantity;
+                    $variation->save();
                 }
             }
 
@@ -583,7 +592,7 @@ class OrderService
 
     private function handleReseller(Order $order)
     {
-        $user = $order->user;
+        $user = User::where('id', $order->user_id)->lockForUpdate()->first();
         if ($user->isReseller()) {
             $percentageAmount = getPercentageAmount($order->amount, $order->product->percentage);
             $user->balance += $percentageAmount;

@@ -77,10 +77,10 @@ class Payment implements GatewayInterface
         $storeId = config('services.sslcommerz.store_id');
         $storePassword = config('services.sslcommerz.store_password');
 
-        $validationUrl = 'https://sandbox.sslcommerz.com/validator/api/validationserverAPI.php';
-        if (!(gs()->sslcommerz_sandbox ?? true)) {
-            $validationUrl = 'https://secure.sslcommerz.com/validator/api/validationserverAPI.php';
-        }
+        $sandbox = config('services.sslcommerz.sandbox', true);
+        $validationUrl = $sandbox
+            ? 'https://sandbox.sslcommerz.com/validator/api/validationserverAPI.php'
+            : 'https://secure.sslcommerz.com/validator/api/validationserverAPI.php';
 
         $validationUrl .= '?val_id=' . $request->val_id . '&store_id=' . $storeId . '&store_passwd=' . $storePassword . '&v=1&format=json';
 
@@ -183,10 +183,10 @@ class Payment implements GatewayInterface
         $storeId = config('services.sslcommerz.store_id');
         $storePassword = config('services.sslcommerz.store_password');
 
-        $validationUrl = 'https://sandbox.sslcommerz.com/validator/api/validationserverAPI.php';
-        if (!(gs()->sslcommerz_sandbox ?? true)) {
-            $validationUrl = 'https://secure.sslcommerz.com/validator/api/validationserverAPI.php';
-        }
+        $sandbox = config('services.sslcommerz.sandbox', true);
+        $validationUrl = $sandbox
+            ? 'https://sandbox.sslcommerz.com/validator/api/validationserverAPI.php'
+            : 'https://secure.sslcommerz.com/validator/api/validationserverAPI.php';
 
         $validationUrl .= '?val_id=' . $request->val_id . '&store_id=' . $storeId . '&store_passwd=' . $storePassword . '&v=1&format=json';
 

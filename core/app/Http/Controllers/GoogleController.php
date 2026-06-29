@@ -33,6 +33,7 @@ class GoogleController extends Controller
                 $newUser = User::create([
                     'name' => $user->name,
                     'email' => $user->email,
+                    'phone' => null,
                     'gauth_id' => $user->id,
                     'password' => Hash::make(strRandom())
                 ]);
@@ -42,7 +43,7 @@ class GoogleController extends Controller
                 }
 
                 Auth::login($newUser, true);
-                return redirect(route('home'));
+                return redirect(route('user.account'))->with('info', __('Please update your phone number.'));
             }
         } catch (Exception $e) {
             return redirect(route('login'))->with('error', __('Google login failed. Please try again.'));

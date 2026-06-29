@@ -118,7 +118,7 @@ class DepositService
                 $deposit->update();
 
                 // Update User
-                $user = $deposit->user;
+                $user = \App\Models\User::where('id', $deposit->user_id)->lockForUpdate()->first();
                 $user->balance += $deposit->amount;
                 $user->save();
 

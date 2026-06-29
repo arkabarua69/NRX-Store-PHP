@@ -167,6 +167,9 @@ if (!function_exists('jsonToPlainTextAdmin')) {
     function jsonToPlainTextAdmin($jsonData)
     {
         $data = json_decode($jsonData, true);
+        if (!is_array($data)) {
+            return '';
+        }
         $result = '';
 
         foreach ($data as $key => $value) {

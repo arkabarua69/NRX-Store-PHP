@@ -56,6 +56,11 @@ class Order extends Model
         return $this->hasOne(Transaction::class);
     }
 
+    public function transactions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
     public function voucher(): HasOne
     {
         return $this->hasOne(Voucher::class);
