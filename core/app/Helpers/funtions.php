@@ -51,7 +51,7 @@ if (!function_exists('get_image')) {
     function get_image($path)
     {
         if (empty($path)) return '';
-        return route('media.file', ['p' => $path]);
+        return route('media.file', ['p' => basename($path)]);
     }
 }
 
@@ -62,7 +62,8 @@ if (!function_exists('setEnvValue')) {
         $contents = File::get($envFilePath);
 
         $newValue = is_string($value) ? '"' . addslashes($value) . '"' : $value;
-        $pattern = "/^{$key}=.*/m";
+        $quotedKey = preg_quote($key, '/');
+        $pattern = "/^{$quotedKey}=.*/m";
 
         if (preg_match($pattern, $contents)) {
             $contents = preg_replace($pattern, "{$key}={$newValue}", $contents);
@@ -82,7 +83,8 @@ if (!function_exists('setEnvValues')) {
 
         foreach ($keyValuePairs as $key => $value) {
             $newValue = is_string($value) ? '"' . addslashes($value) . '"' : $value;
-            $pattern = "/^{$key}=.*/m";
+            $quotedKey = preg_quote($key, '/');
+            $pattern = "/^{$quotedKey}=.*/m";
 
             if (preg_match($pattern, $contents)) {
                 $contents = preg_replace($pattern, "{$key}={$newValue}", $contents);
@@ -165,6 +167,9 @@ if (!function_exists('jsonToPlainTextAdmin')) {
     function jsonToPlainTextAdmin($jsonData)
     {
         $data = json_decode($jsonData, true);
+        if (!is_array($data)) {
+            return '';
+        }
         $result = '';
 
         foreach ($data as $key => $value) {

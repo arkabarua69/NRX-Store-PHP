@@ -44,7 +44,7 @@ $accountInfo = json_decode(json_encode($order->account_info), true);
 @if(isset($accountInfo['account_type']))
  <p class="px-3 py-1 text-left"><span class="font-bold">Account Type: </span> {{ $accountInfo['account_type'] }}</p>
  <p class="px-3 py-1 text-left"><span class="font-bold">Game Account: </span> {{ $accountInfo['game_account'] }}</p>
- <p class="px-3 py-1 text-left"><span class="font-bold">Game Password: </span> {{ $accountInfo['game_password'] }}</p>
+ <p class="px-3 py-1 text-left"><span class="font-bold">Game Password: </span> {{ str_repeat('*', strlen($accountInfo['game_password'])) }}</p>
  <p class="px-3 py-1 text-left"><span class="font-bold">Game Backup: </span> {{ $accountInfo['game_backup'] }}</p>
 @endif
 @if(isset($accountInfo['player_id']))

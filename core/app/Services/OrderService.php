@@ -97,12 +97,14 @@ class OrderService
             return redirect()->route('user.order.pay', ['id' => $pendingOrder->id]);
         }
 
-        $amount_cal = $variation->price * $request->input('quantity', 1);
+        $quantity = $request->input('quantity', 1);
+        $amount_cal = $variation->price * $quantity;
         $variation_buy_rate = $variation->buy_rate;
         $profit_cal = 0.00;
 
-        if ($amount_cal > $variation_buy_rate) {
-            $profit_cal = $amount_cal - $variation_buy_rate;
+        $total_buy_rate = $variation_buy_rate * $quantity;
+        if ($amount_cal > $total_buy_rate) {
+            $profit_cal = $amount_cal - $total_buy_rate;
             $profit_cal = number_format($profit_cal, 2, '.', '');
         }
 
@@ -110,7 +112,7 @@ class OrderService
             'user_id'      => user_id(),
             'product_id'   => $variation->product->id,
             'variation_id' => $variation->id,
-            'quantity'     => $request->input('quantity', 1),
+            'quantity'     => $quantity,
             'amount'       => $amount_cal,
             'profit'       => $profit_cal,
             'track_id'     => strRandom(),
@@ -136,12 +138,12 @@ class OrderService
                 $redirect = ($order->product->isVoucher()) ? route('user.codes') : route('user.orders');
                 return redirect($redirect)->with('success', __('Order Successful.'));
             } catch (\Exception $exception) {
-                return back()->with('error', $exception->getMessage());
+                return back()->with('error', __('Payment processing failed.'));
             }
         }
 
         try {
-            $gateway = $request->input('gateway', 'uddoktapay');
+            $gateway = $request->input('payment_method', 'uddoktapay');
             $getwayObj = $this->resolveGateway($gateway);
             $data = $getwayObj::prepareOrderData($order, $gateway);
             $data = (object) $data;
@@ -181,18 +183,20 @@ class OrderService
             return back()->with('error', __('Sorry, this voucher is out of stock.'));
         }
 
-        if (gs()->wallet === Status::ACTIVE && auth()->user()->balance >= $order->amount) {
+        $paymentMethod = request('payment_method', request('gateway', 'uddoktapay'));
+
+        if (gs()->wallet === Status::ACTIVE && $paymentMethod === Status::WALLET && auth()->user()->balance >= $order->amount) {
             try {
                 $this->completeOrderWithWallet($order, Status::WALLET);
                 $redirect = ($order->product->isVoucher()) ? route('user.codes') : route('user.orders');
                 return redirect($redirect)->with('success', __('Order Successful.'));
             } catch (\Exception $exception) {
-                return back()->with('error', $exception->getMessage());
+                return back()->with('error', __('Payment processing failed.'));
             }
         }
 
         try {
-            $gateway = request('gateway', 'uddoktapay');
+            $gateway = $paymentMethod !== Status::WALLET ? $paymentMethod : 'uddoktapay';
             $getwayObj = $this->resolveGateway($gateway);
             $data = $getwayObj::prepareOrderData($order, $gateway);
             $data = (object) $data;
@@ -223,7 +227,7 @@ class OrderService
             $getwayObj = $this->resolveGateway($gateway);
             $data = $getwayObj::orderIpn($request, $order, $gateway);
         } catch (\Exception $exception) {
-            return redirect()->route('user.account')->with('error', $exception->getMessage());
+            return redirect()->route('user.account')->with('error', __('Payment verification failed.'));
         }
 
         if (isset($data['redirect'])) {
@@ -235,11 +239,6 @@ class OrderService
 
     public function completeOrder(Order $order, string $paymentMethod, string $transactionId, ?Voucher $vouchers = null)
     {
-        $exists = Transaction::where('transaction_id', $transactionId)->exists();
-        if ($exists) {
-            throw new \Exception(__('Transaction ID already exists.'));
-        }
-
         $variation = Variation::where('stock', '>', 0)->with(['product', 'vouchers' => function ($query) {
             $query->where('status', Status::AVAILABLE);
         }])->find($order->variation_id);
@@ -268,6 +267,10 @@ class OrderService
         }
 
         DB::transaction(function () use ($order, $paymentMethod, $transactionId, $vouchers) {
+            $exists = Transaction::where('transaction_id', $transactionId)->exists();
+            if ($exists) {
+                throw new \Exception(__('Transaction ID already exists.'));
+            }
             if ($order->isPending()) {
                 $newStatus = ($order->product->isVoucher()) ? Status::COMPLETED : Status::PROCESSING;
                 $order['status'] = $newStatus;
@@ -306,7 +309,7 @@ class OrderService
                     $order->update();
                 } else {
                     $variation = $order->variation;
-                    $variation->stock -= 1;
+                    $variation->stock -= $order->quantity;
                     $variation->save();
                 }
 
@@ -365,10 +368,6 @@ class OrderService
 
     public function completeOrderWithWallet(Order $order, string $paymentMethod, ?Voucher $vouchers = null)
     {
-        if ($order->amount > auth()->user()->balance) {
-            throw new \Exception(__('Insufficient Balance.'));
-        }
-
         $variation = Variation::where('stock', '>', 0)->with(['product', 'vouchers' => function ($query) {
             $query->where('status', Status::AVAILABLE);
         }])->find($order->variation_id);
@@ -390,13 +389,16 @@ class OrderService
         }
 
         DB::transaction(function () use ($order, $vouchers, $paymentMethod) {
+            $user = User::where('id', $order->user_id)->lockForUpdate()->first();
+            if ($order->amount > $user->balance) {
+                throw new \Exception(__('Insufficient Balance.'));
+            }
             if ($order->isPending()) {
                 // Update Order status
                 $order['status'] = ($order->product->isVoucher()) ? Status::COMPLETED : Status::PROCESSING;
                 $order->update();
 
-                // Deduct wallet balance with lock
-                $user = User::where('id', $order->user_id)->lockForUpdate()->first();
+                // Deduct wallet balance
                 $user->balance -= $order->amount;
                 $user->save();
 
@@ -424,7 +426,7 @@ class OrderService
                 } else {
                     // Update Variation stock
                     $variation = $order->variation;
-                    $variation->stock -= 1;
+                    $variation->stock -= $order->quantity;
                     $variation->save();
                 }
 
@@ -478,7 +480,7 @@ class OrderService
     {
         DB::transaction(function () use ($order, $paymentMethod, $transactionId) {
             // Credit wallet
-            $user = $order->user;
+            $user = User::where('id', $order->user_id)->lockForUpdate()->first();
             $user->balance += $order->amount;
             $user->save();
 
@@ -508,7 +510,7 @@ class OrderService
     public static function cancelOrder(Order $order)
     {
         DB::transaction(function () use ($order) {
-            $user = $order->user;
+            $user = User::where('id', $order->user_id)->lockForUpdate()->first();
             $refundAmount = $order->amount;
 
             if ($user->isReseller()) {
@@ -520,29 +522,38 @@ class OrderService
             $user->save();
 
             if ($order->product->isVoucher() && $order->voucher_code) {
-                $voucher = Voucher::where('order_id', $order->id)->first();
-                if ($voucher) {
+                $vouchers = Voucher::where('order_id', $order->id)->get();
+                foreach ($vouchers as $voucher) {
                     $voucher->status = Status::AVAILABLE;
                     $voucher->order_id = null;
                     $voucher->transaction_id = null;
                     $voucher->save();
+                }
 
+                if ($vouchers->count() > 0) {
                     $variation = $order->variation;
-                    $variation->stock += 1;
+                    $variation->stock += $vouchers->count();
                     $variation->save();
                 }
             }
 
             if ($order->status === OrderStatus::PROCESSING || $order->status === OrderStatus::AUTOPROCESSING) {
-                $autoVoucher = AutoVoucher::where('order_id', $order->id)->first();
-                if ($autoVoucher) {
+                $autoVouchers = AutoVoucher::where('order_id', $order->id)->get();
+                foreach ($autoVouchers as $autoVoucher) {
                     $autoVoucher->status = Status::AVAILABLE;
                     $autoVoucher->order_id = null;
                     $autoVoucher->transaction_id = null;
                     $autoVoucher->save();
+                }
 
+                if ($autoVouchers->count() > 0) {
                     $variation = $order->variation;
-                    $variation->stock += 1;
+                    $variation->stock += $autoVouchers->count();
+                    $variation->save();
+                } elseif (!$order->product->isVoucher()) {
+                    // Restore stock for non-voucher orders without auto vouchers
+                    $variation = $order->variation;
+                    $variation->stock += $order->quantity;
                     $variation->save();
                 }
             }
@@ -581,7 +592,7 @@ class OrderService
 
     private function handleReseller(Order $order)
     {
-        $user = $order->user;
+        $user = User::where('id', $order->user_id)->lockForUpdate()->first();
         if ($user->isReseller()) {
             $percentageAmount = getPercentageAmount($order->amount, $order->product->percentage);
             $user->balance += $percentageAmount;

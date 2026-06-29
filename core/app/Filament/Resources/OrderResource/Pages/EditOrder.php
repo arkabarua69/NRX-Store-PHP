@@ -36,6 +36,10 @@ class EditOrder extends EditRecord
                     ->warning()
                     ->body('The order amount has been refunded to the user\'s account.')
                     ->send();
+
+                // Refresh the record to prevent double-save of status change
+                $this->record->refresh();
+                $this->halt();
             }
         } catch (ModelNotFoundException $e) {
             //

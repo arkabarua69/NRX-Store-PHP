@@ -40,7 +40,10 @@ class DispatchOrderRequests extends Command
                 $order->attempts = 1;
                 $order->save();
 
-                $autoVoucher = AutoVoucher::where('code', $order->voucher_code)->first();
+                $autoVoucher = AutoVoucher::where('order_id', $order->id)->first();
+                if (!$autoVoucher) {
+                    $autoVoucher = AutoVoucher::where('code', $order->voucher_code)->first();
+                }
                 if (!$autoVoucher) {
                     continue;
                 }

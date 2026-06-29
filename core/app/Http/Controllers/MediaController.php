@@ -20,6 +20,7 @@ class MediaController extends Controller
     {
         $path = $request->query('p');
         if (!$path) abort(404);
+        $path = basename($path);
         if (str_contains($path, '..') || str_starts_with($path, '/') || str_starts_with($path, '\\')) {
             abort(404);
         }

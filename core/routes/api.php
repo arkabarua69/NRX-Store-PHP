@@ -8,7 +8,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::post('/auto-topup/webhook', [App\Http\Controllers\Api\TopupWebhookController::class, 'handle'])
-    ->middleware('throttle:30,1')
+    ->middleware(['throttle:30,1', 'auth.webhook'])
     ->name('auto.topup.webhook');
 
 Route::middleware(['auth:sanctum', 'throttle:60,1'])->prefix('reseller')->name('api.reseller.')->group(function () {
