@@ -260,7 +260,7 @@
          <h1 class="font-bold p-2"> Rules &amp; Conditions </h1>
          <hr>
          <div class="p-2">
-            {!! $product->content !!}
+             {{ $product->content }}
          </div>
       </div>
    </div>
